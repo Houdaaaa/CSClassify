@@ -104,12 +104,21 @@ class Database():   #classe statique?
         return nodeList
 
     @staticmethod
+    def find_sub_nodes_node(node, relationName):
+        #f = Database.find_one_field(node['name'])
+        nodeList = []
+        for rel in graph.match((node,), r_type=relationName):
+            nodeList.append(rel.end_node)  # type of rel.end_node = Node()
+        # print(nodeList[0]['name']) #ok
+        return nodeList
+
+    @staticmethod
     def find_same_level_fields(level):
         fieldsNodes = matcher.match("Field", level=level)
         nodesList=[]
         for field in fieldsNodes:
             nodesList.append(field)
-        print(nodesList)
+        #print(nodesList)
         return nodesList
 
     '''faut-t-il afficher les questions même pour un niveau 1?'''
@@ -171,6 +180,13 @@ class Database():   #classe statique?
         questionNode['answer'] = newAnswer
 
         graph.push(questionNode)
+
+    @staticmethod
+    def oui(field):
+        listOfDict = graph.run("""MATCH (f: Field{name: '%s', level: '%d'})
+                     RETURN f""" % (field.get_name(), field.get_level())).data()
+        print(listOfDict)
+
 
 
 
