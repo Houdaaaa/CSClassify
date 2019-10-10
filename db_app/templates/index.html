@@ -1,5 +1,16 @@
 <!doctype html>
-  <h2>Index</h2>
-    <p>afficher ici tous les niveaux1 pour commencer</p>
-    <p> {{newfield}}</p>
+<html>
+<head>
+  <title>EDITx</title>
+</head>
+<body>
+  <h2>Index </h2>
+  <ul id="Fields_L1">
+    {% for field in rootFieldsList %}
+      <li> {{field.name}} </li>
+    {% endfor %}
+  </ul>
+</body>
+
+</html>
 

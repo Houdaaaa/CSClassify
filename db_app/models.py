@@ -91,9 +91,9 @@ class Database():   #classe statique?
             fieldNode = matcher.match("Field", name=name).first()
             return fieldNode
 
-    '''for questions and subfiels of a field'''
+    '''for questions and subfiels of a field'''     #attention juste pour un niveau, autre fonction pour trouver pour afficher tout le sous-graphe
     @staticmethod
-    def find_nodes(field, relationName):
+    def find_sub_nodes(field, relationName):
         fieldLevel = field.get_level()
         fieldName = field.get_name()
         f = Database.find_one_field(fieldName)
@@ -109,7 +109,7 @@ class Database():   #classe statique?
         nodesList=[]
         for field in fieldsNodes:
             nodesList.append(field)
-        #print(nodeList[2]['name'])
+        print(nodesList)
         return nodesList
 
     '''faut-t-il afficher les questions même pour un niveau 1?'''
@@ -145,31 +145,35 @@ class Database():   #classe statique?
         relationship = graph.match_one(nodes= (startNode, endNode), r_type=relationName)
         graph.separate(relationship)
 
+    '''attention gérer l'existance du noeud 'field' avant le pushing'''
     @staticmethod
-    def modify_field(field, newField): #modify the properties only
+    def edit_field(field, newName, newLevel): #modify the properties only,
         fieldName = field.get_name()
         fieldLevel = field.get_level()
-        newFieldName = newField.get_name()
-        newFieldLevel = newField.get_level()
 
         fieldNode=Database.find_one_field(fieldName)
-        alle=Node('Field', id=fieldNode['id'])
-        newFieldNode=Node('Field', name=newFieldName, level=newFieldLevel)
-        graph.merge(alle, 'Field', fieldNode['id'])
-        alle['level']=3
-        alle.push()
+
+        fieldNode['name'] = newName
+        fieldNode['level']= newLevel
+
+        graph.push(fieldNode)
 
 
 
     @staticmethod
-    def modify_question(question, newQuestion):
+    def edit_question(question, newTitle, newAnswer):  #ou passer directement l'objet newQuestion?
         title = question.get_title()
         answer = question.get_answer()
-        newTitle = newQuestion.get_title()
-        newAnswer = newQuestion.get_answer()
-        cql_query = """MATCH (q: Question{title: '%s', answer: '%s'})
-                       SET q.title = '%s', q.answer = '%s' """ % (title, answer, newTitle, newAnswer)
-        return graph.run(cql_query)
+
+        questionNode = matcher.match("Question", title=title).first()
+
+        questionNode['title'] = newTitle
+        questionNode['answer'] = newAnswer
+
+        graph.push(questionNode)
+
+
+
 
     #def delete_subgraph
     #def add subgraph
