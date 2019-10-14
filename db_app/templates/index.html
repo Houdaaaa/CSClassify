@@ -2,7 +2,7 @@
 <html>
 <head>
   <link rel="stylesheet" type="text/css" href="static/style.css" />
-  <!--<link href="static/bootstrap.min.css" rel="stylesheet">   <!--theme yeti : https://bootswatch.com/yeti/
+  <!--<link href="static/bootstrap.min.css" rel="stylesheet">   theme yeti : https://bootswatch.com/yeti/
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">   -->
 
   <title>EDITx</title>
@@ -11,7 +11,7 @@
   <h2>Index </h2>
 
 
-  {% for field in rootFieldsList %}
+  {% for field in allFields %}
     <nav id="menu">
       <label for="tm" id="toggle-menu">navigation <span class="drop-icon">▾</span></label>
       <input type="checkbox" id="tm">
@@ -20,24 +20,26 @@
             <span class="drop-icon">▾</span>
             <label title="Toggle Drop-down" class="drop-icon" for="sm1">▾</label>
           </a>
-          {% if 1 %}
             <input type="checkbox" id="sm1">
             <ul class="sub-menu">
-              <li><a href="#">Item 2.1</a></li>
-              <li><a href="#">Item 2.2
-                  <span class="drop-icon">▾</span>
-                  <label title="Toggle Drop-down" class="drop-icon" for="sm2">▾</label>
-                </a>
-                <input type="checkbox" id="sm2">
-                <ul class="sub-menu">
-                  <li><a href="#">Item 2.2.1</a></li>
-                  <li><a href="#">Item 2.2.2</a></li>
-                  <li><a href="#">Item 2.2.3</a></li>
-                </ul>
-              </li>
-              <li><a href="#">Item 3.4</a></li>
+              {% for subfield in field.subfields %}
+                {% if (subfield.subfields)  %}
+                  <li><a href="#">{{subfield.name}}
+                    <span class="drop-icon">▾</span>
+                    <label title="Toggle Drop-down" class="drop-icon" for="sm2">▾</label>
+                  </a>
+                  <input type="checkbox" id="sm2">
+                  <ul class="sub-menu">
+                    {% for subsubfield in subfield.subfields %}
+                      <li><a href="#">{{subsubfield}}</a></li>
+                    {% endfor %}
+                  </ul>
+                  </li>
+                {% else %}
+                  <li><a href="#">{{subfield.name}}</a></li>
+                {% endif %}
+              {% endfor %}
             </ul>
-          {% endif %}
         </li>
       </ul>
     </nav>

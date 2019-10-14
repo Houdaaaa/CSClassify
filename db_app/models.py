@@ -182,14 +182,91 @@ class Database():   #classe statique?
         graph.push(questionNode)
 
     @staticmethod
-    def oui(field):
-        listOfDict = graph.run("""MATCH (f: Field{name: '%s', level: '%d'})
-                     RETURN f""" % (field.get_name(), field.get_level())).data()
-        print(listOfDict)
+    def find_subfields(field):
+        return graph.run("MATCH (f:Field{name:{name}})-[:subfield]->(f2:Field)-[:subfield]->(f3:Field)  "
+                         "RETURN f2.name, f2.level, f3.name, f3.level", name=field.get_name()).data()   #liste dico de tous les noeuds de l'arbre
+
+    @staticmethod
+    def find_subfields_2(field):
+        levels_1_2 = graph.run('''MATCH (f:Field{name:{name}})-[:subfield]->(f2:Field)
+                                  RETURN f.name AS name, collect(f2.name) AS subfields''', name=field.get_name()).data()
+
+        levels_2_3 = graph.run('''MATCH (f:Field{name:{name}})-[:subfield]->(f2:Field)-[:subfield]->(f3:Field)
+                                  RETURN f2.name AS name_L2, collect(f3.name) AS subfields_L3''', name=field.get_name()).data()
+
+        #print(levels_1_2)
+        #print(levels_2_3)
+
+        malist = []
+        for field in levels_1_2:
+            mondico={}
+            mondico["name"] = field['name']
+            mondico["subfields"] = []
+            for field_L2_name in field['subfields']:
+                for field_L2 in levels_2_3:
+                    if field_L2_name == field_L2['name_L2']:
+                        dico2 = {}
+                        dico2["name"] = field_L2['name_L2']
+                        dico2["subfields"] = []
+                        for field_L3 in field_L2['subfields_L3']:
+                            dico2["subfields"].append(field_L3)
+                        mondico["subfields"].append(dico2)
+            malist.append(mondico)
+
+        #print(malist)
+        return levels_1_2,levels_2_3
+
+
+    '''Attention je pars du principe qu'il y a au moins des sous-branches niveau 2 sinon don't display it'''
+    @staticmethod
+    def find_subfields_3():
+        levels_1_2 = graph.run('''MATCH (f:Field{level:1})-[:subfield]->(f2:Field) 
+                                  RETURN f.name AS name, collect(f2.name) AS subfields''').data()
+
+        levels_2_3 = graph.run('''MATCH (f:Field{level:1})-[:subfield]->(f2:Field)-[:subfield]->(f3:Field)
+                                  RETURN f2.name AS name_L2, collect(f3.name) AS subfields_L3''').data()
+
+        print(levels_1_2)
+        print(levels_2_3)
+
+        malist = []
+        for rootField in levels_1_2:
+            mondico={}
+            mondico["name"] = rootField['name']
+            mondico["subfields"] = []
+            fields_used = []
+            for field_L2 in levels_2_3:
+                if field_L2["name_L2"] in rootField['subfields']:  # rootField['subfields'] est une liste de str
+                    dico2 = {}
+                    dico2["name"] = field_L2['name_L2']
+                    dico2["subfields"] = []
+                    for field_L3 in field_L2['subfields_L3']:
+                        dico2["subfields"].append(field_L3)
+                    mondico["subfields"].append(dico2)
+                    fields_used.append(field_L2['name_L2'])
+            for field_L2_name in rootField['subfields']:  #pour level 2 qui n'ont pas de level 3, à refactorer
+                if field_L2_name not in fields_used:
+                    dico2 = {}
+                    dico2["name"] = field_L2_name
+                    dico2["subfields"] = []
+                    mondico["subfields"].append(dico2)
+            malist.append(mondico)
+
+        print(malist)
+        return malist
 
 
 
 
+'''return graph.run("MATCH (f:Field{name:{name}})-[:subfield]->(f2:Field)"
+                         "RETURN f.name AS name, collect(f2.name) AS subfields", name=field.get_name()).data()'''
+'''MATCH (j:Person {name: 'Jennifer'})-[:LIKES]->(:Technology {type: 'Graphs'})<-[:LIKES]-(p:Person),
+      (j)-[:IS_FRIENDS_WITH]-(p)
+RETURN p.name'''
 
+
+''' cql_query = """MATCH (f: Field{name: '%s', level: '%d'})-[rel: subfield*]->(f2: Field)
+                               RETURN f2.name, f2.level""" % (fieldName, fieldLevel)
+'''
     #def delete_subgraph
     #def add subgraph

@@ -14,19 +14,16 @@ def index():
     f3 = Field('programming', 1)
     f4 = Field('storage management', 2)
     f5 = Field('files systems', 3)
-
-    '''for field in rootFieldsList:
-        for field2 in Database.find_sub_nodes_node(field, 'subfield'):
-            fieldsL2List[field['name'] = field2['name']
-            for field3 in Database.find_sub_nodes_node(field2, 'subfield'):
-                fieldsL2List[field['name'] = [field2['name']] 
-                = field3['name']  # --> {'storage management': 'files systems'}
-                #fieldsL2List[field2['name']] = {'name':field3['name'], 'level':field3['level']}  --> #{'storage management': {'name': 'files systems', 'level': 3}}
-    '''
+    f6 = Field('memory management', 3)
+    f7 = Field('os types', 2)
+    f8 = Field('languages', 2)
+    f9 = Field('paradigms', 2)
+    f10 = Field('imperative', 3)
 
 
-    print(fieldsL2List)
+    levels_1_2, levels_2_3 = Database.find_subfields_2(f1)
+    allFields = Database.find_subfields_3()
 
 
 
-    return render_template('index.html', rootFieldsList=rootFieldsList)
+    return render_template('index.html', allFields=allFields )
