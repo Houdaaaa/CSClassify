@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="static/style.css" />
+    <title>Questions</title>
+</head>
+<body>
+    <h1 class="title">{{field}}</h1>
+    {% for question in questionsList %}
+        <ul>
+            <p>{{question['title']}}</p>
+        </ul>
+    {% endfor %}
+
+</body>
+</html>

@@ -83,7 +83,7 @@ class Database():   #classe statique?
 
         f = matcher.match("Field", name=subfieldName, level=subfieldLevel).first()
         q = matcher.match("Question", title=questionTitle).first()
-        graph.merge(Relationship(f, 'subfield', q))
+        graph.merge(Relationship(f, 'question', q))
 
     '''return : object Node'''
     @staticmethod
@@ -101,6 +101,7 @@ class Database():   #classe statique?
         for rel in graph.match((f,), r_type=relationName):
             nodeList.append(rel.end_node)   #type of rel.end_node = Node()
         #print(nodeList[0]['name']) #ok
+        print(nodeList)
         return nodeList
 
     @staticmethod
@@ -180,6 +181,14 @@ class Database():   #classe statique?
         questionNode['answer'] = newAnswer
 
         graph.push(questionNode)
+
+    @staticmethod
+    def find_questions(field):
+        nameField = field.get_name()
+        questions = graph.run('''MATCH (f:Field{name: {name}})-[:subfield*0..2]->(f2:Field)-[:question]->(q:Question)
+                                          RETURN q.title AS title, q.answer AS answer ''', name=nameField).data() #return list of dictionnaries
+
+        return questions
 
     '''Attention je pars du principe qu'il y a au moins des sous-branches niveau 2 sinon don't display it'''
     @staticmethod
