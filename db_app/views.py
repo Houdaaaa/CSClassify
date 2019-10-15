@@ -24,4 +24,5 @@ def index():
 def display_questions(fieldName):
     field = Field(fieldName, 0) #A t-on besoin du level? à voir
     questionsList= Database.find_questions(field)
-    return render_template('questions.html', field=fieldName, questionsList=questionsList)
+    subfields= Database.find_subfields(fieldName)
+    return render_template('questions.html', field=fieldName, questionsList=questionsList, subfields=subfields)

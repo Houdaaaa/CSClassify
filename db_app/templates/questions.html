@@ -2,15 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="static/style.css" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
     <title>Questions</title>
 </head>
 <body>
     <h1 class="title">{{field}}</h1>
-    {% for question in questionsList %}
+    <br />
+    {% for field in subfields %}
         <ul>
-            <p>{{question['title']}}</p>
+            <li>
+                <a href="/questions/{{field['name']}}">{{field['name']}}</a>
+                {% for subfield in field['subfields'] %}
+                    <ul>
+                        <li>
+                            <a href="/questions/{{subfield}}"> {{subfield}}</a>
+                        </li>
+                    </ul>
+                {% endfor %}
+            </li>
         </ul>
+    {% endfor %}
+    <br />
+    {% for question in questionsList %}
+        <div class="list-group">
+            <a href="/" class="list-group-item list-group-item-action">{{question['title']}}</a>
+        </div>
     {% endfor %}
 
 </body>

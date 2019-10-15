@@ -190,6 +190,15 @@ class Database():   #classe statique?
 
         return questions
 
+
+    @staticmethod
+    def find_subfields(nameField):
+        fields = graph.run('''MATCH (f:Field{name:{name}})-[:subfield]->(f2:Field) 
+                              OPTIONAL MATCH (f)-[:subfield]->(f2)-[:subfield]->(f3:Field)
+                              RETURN f2.name AS name, collect(f3.name) AS subfields''', name=nameField).data() #list of dico, [] if level 3
+        print(fields)
+        return fields
+
     '''Attention je pars du principe qu'il y a au moins des sous-branches niveau 2 sinon don't display it'''
     @staticmethod
     def find_all_fields():

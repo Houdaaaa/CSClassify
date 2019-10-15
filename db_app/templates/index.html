@@ -1,14 +1,15 @@
 <!doctype html>
 <html>
 <head>
-  <link rel="stylesheet" type="text/css" href="static/style.css" />
-  <!--<link href="static/bootstrap.min.css" rel="stylesheet">   theme yeti : https://bootswatch.com/yeti/
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">   -->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <!--<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+  <link href="static/bootstrap.min.css" rel="stylesheet">   theme yeti : https://bootswatch.com/yeti/ -->
 
   <title>EDITx</title>
 </head>
 <body>
-  <h1 class="title">Index</h1>
+    <h1 class="title">Index</h1>
+
 
   {% for field in allFields %}
     <nav id="menu">
