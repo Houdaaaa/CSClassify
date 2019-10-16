@@ -25,4 +25,10 @@ def display_questions(fieldName):
     field = Field(fieldName, 0) #A t-on besoin du level? à voir
     questionsList= Database.find_questions(field)
     subfields= Database.find_subfields(fieldName)
-    return render_template('questions.html', field=fieldName, questionsList=questionsList, subfields=subfields)
+    concernedFieldsName = Database.find_concerned_fields(fieldName)
+    concernedFields = []
+    for field in concernedFieldsName:
+        concernedFields.append(Database.find_subfields(field))# liste de liste de dico
+    print(concernedFields)
+
+    return render_template('questions.html', field=fieldName, questionsList=questionsList, subfields=subfields, concernedFields=concernedFields)
