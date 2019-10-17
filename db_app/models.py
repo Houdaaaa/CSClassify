@@ -48,6 +48,11 @@ class Database():   #classe statique?
         graph.create(questionNode)
 
     @staticmethod
+    def add_buzz_word(name):
+        buzzWord = Node('BuzzWord', name=name)
+        graph.create(buzzWord)
+
+    @staticmethod
     def add_subfield_relationship(field, subfield):
         '''fieldLevel = field.get_level()
         fieldName = field.get_name()
@@ -62,17 +67,27 @@ class Database():   #classe statique?
         #    print("the level of the first param must be smaller than the level of the second")
 
     @staticmethod
-    def add_is_linked_to_relationship(field1, field2):
+    def add_is_linked_to_relationship(buzzWord, field):
         '''field1Level = field1.get_level()
         field1Name = field1.get_name()
         field2Level = field2.get_level()
         field2Name = field2.get_name()'''
 
         #if(field1Level > field2Level):
-        f1 = matcher.match("Field", name=field1).first()
-        f2 = matcher.match("Field", name=field2).first()
+        f1 = matcher.match("BuzzWord", name=buzzWord).first()
+        f2 = matcher.match("Field", name=field).first()
         graph.merge(Relationship(f1, 'is_linked_to', f2))
         #else:
+        #    print("the level of the first param must be greater than the level of the second")
+
+    @staticmethod
+    def add_concerns_relationship(field1, field2):
+
+        # if(field1Level > field2Level):
+        f1 = matcher.match("Field", name=field1).first()
+        f2 = matcher.match("Field", name=field2).first()
+        graph.merge(Relationship(f1, 'concerns', f2))
+        # else:
         #    print("the level of the first param must be greater than the level of the second")
 
     @staticmethod
@@ -90,6 +105,11 @@ class Database():   #classe statique?
     def find_one_field(name): #or param = object field?
             fieldNode = matcher.match("Field", name=name).first()
             return fieldNode
+
+    @staticmethod
+    def find_one_buzzword(name):  # or param = object field?
+        buzzwordNode = matcher.match("BuzzWord", name=name).first()
+        return buzzwordNode
 
     '''for questions and subfiels of a field'''     #attention juste pour un niveau, autre fonction pour trouver pour afficher tout le sous-graphe
     @staticmethod
@@ -124,16 +144,45 @@ class Database():   #classe statique?
 
     '''faut-t-il afficher les questions même pour un niveau 1?'''
     @staticmethod
-    def find_questions(field):
-        fieldLevel = field.get_level()
-        fieldName = field.get_name()
+    def find_buzz_words():
+        fields = graph.run('''MATCH (f:BuzzWord) 
+                              RETURN f.name AS name''').data()
+        print(fields)
+        return fields
 
+    @staticmethod
+    def find_buzz_word_fields(buzzword):
+        #fields = Database.find_sub_nodes(buzzword, 'is_linked_to') str has no attribute field
+        fields2 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f3: Field)<-[:include]-(f2: Field)
+                               OPTIONAL MATCH (f2)<-[:include]-(f1:Field) 
+                               RETURN f2.name AS name, collect(f3.name) AS subfields, f1.name AS name_lev1''', name=buzzword).data()
+
+        print('ok')
+        print(fields2)
+        finalList = []
+        for field in fields2:
+            finalDict = {}
+            level1 = field['name_lev1']
+            del field['name_lev1']
+            finalDict['name'] = level1  #si la clé existe, donnée écrasée , non attention il y  aun append a faire
+            finalDict['subfields'] = field
+            finalList.append(finalDict)
+
+        print(finalList) #liste de dico dont les clé sont des dico dont les clé sont des listes
+        return finalList
     '''delete the field and all its relationships'''
     @staticmethod
     def delete_field(field):        #supprime tous les noeuds ayant le même nom, utiliser id? corriger pour avoir field avec nom unique
         fieldLevel = field.get_level()
         fieldName = field.get_name()
         fieldNode = Database.find_one_field(fieldName)
+        graph.delete(fieldNode)
+
+    '''delete the field and all its relationships'''
+
+    @staticmethod
+    def delete_buzz_word(buzzword):  # supprime tous les noeuds ayant le même nom, utiliser id? corriger pour avoir field avec nom unique
+        fieldNode = Database.find_one_buzzword(buzzword)
         graph.delete(fieldNode)
 
     @staticmethod

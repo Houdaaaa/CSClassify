@@ -15,7 +15,14 @@ def index():
     q7 = Question('titre7', 'reponse7')
     q8 = Question('titre8', 'reponse8')
 
-    return render_template('index.html', allFields=allFields)
+    '''Database.add_buzz_word('cloud computing')
+    Database.add_is_linked_to_relationship('cloud computing', 'memory management' )
+    Database.add_is_linked_to_relationship('cloud computing', 'files systems')
+    Database.add_is_linked_to_relationship('cloud computing', 'object-oriented')
+    Database.add_is_linked_to_relationship('cloud computing', 'threads')'''
+    buzzWords = Database.find_buzz_word_fields('cloud computing')
+
+    return render_template('index.html', allFields=allFields, buzzWords=buzzWords)
 
 @app.route('/questions/<fieldName>')
 def display_questions(fieldName):
