@@ -3,7 +3,7 @@ from flask import Flask, request, session, redirect, url_for, render_template, f
 
 app = Flask(__name__)
 
-@app.route('/', defaults={'bw': None})
+@app.route('/', defaults={'bw': 'cloud computing'})
 @app.route('/<bw>')
 def index(bw):
     allFields = Database.find_all_fields()
