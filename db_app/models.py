@@ -76,20 +76,6 @@ class Database():   #classe statique?
         #    print("the level of the first param must be greater than the level of the second")
 
     @staticmethod
-    def add_concerns_relationship(field1, field2):
-        '''field1Level = field1.get_level()
-        field1Name = field1.get_name()
-        field2Level = field2.get_level()
-        field2Name = field2.get_name()'''
-
-        # if(field1Level > field2Level):
-        f1 = matcher.match("Field", name=field1).first()
-        f2 = matcher.match("Field", name=field2).first()
-        graph.merge(Relationship(f1, 'concerns', f2))
-        # else:
-        #    print("the level of the first param must be greater than the level of the second")
-
-    @staticmethod
     def add_question_relationship(subfield, question):
         #subfieldName = subfield.get_name()
         subfieldLevel = subfield.get_level()

@@ -30,5 +30,24 @@
         </div>
     {% endfor %}
 
+    {% if concernedFields[0]['name'] != None %}
+        <h3> concerned fields: </h3>
+        {% for concernedField in concernedFields %}
+            <ul>
+                <li>
+                    <a href="/questions/{{concernedField['name']}}">{{concernedField['name']}}</a>
+                    {% for field in concernedField['subfields'] %}
+                        <ul>
+                            <li>
+                                 <a href="/questions/{{field['name']}}">{{field['name']}}</a>
+                            </li>
+                        </ul>
+                    {% endfor %}
+                </li>
+            </ul>
+        {% endfor %}
+    {% endif %}
+
+
 </body>
 </html>
