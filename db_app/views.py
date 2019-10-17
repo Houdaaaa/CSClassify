@@ -3,8 +3,9 @@ from flask import Flask, request, session, redirect, url_for, render_template, f
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
+@app.route('/', defaults={'bw': None})
+@app.route('/<bw>')
+def index(bw):
     allFields = Database.find_all_fields()
     q1 = Question('titre1','reponse1')
     q2 = Question('titre2','reponse2')
@@ -20,9 +21,15 @@ def index():
     Database.add_is_linked_to_relationship('cloud computing', 'files systems')
     Database.add_is_linked_to_relationship('cloud computing', 'object-oriented')
     Database.add_is_linked_to_relationship('cloud computing', 'threads')'''
-    buzzWords = Database.find_buzz_word_fields('cloud computing')
+    if bw != None:
+        buzzWordFields = Database.find_buzz_word_fields(bw)
+    else:
+        buzzWordFields = None
 
-    return render_template('index.html', allFields=allFields, buzzWords=buzzWords)
+    buzzWords = Database.find_buzz_words()[0]['names']
+    print(buzzWords)
+
+    return render_template('index.html', allFields=allFields, buzzWordFields=buzzWordFields, buzzWords=buzzWords )
 
 @app.route('/questions/<fieldName>')
 def display_questions(fieldName):

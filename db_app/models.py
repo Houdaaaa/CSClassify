@@ -146,7 +146,7 @@ class Database():   #classe statique?
     @staticmethod
     def find_buzz_words():
         fields = graph.run('''MATCH (f:BuzzWord) 
-                              RETURN f.name AS name''').data()
+                              RETURN collect(f.name) AS names''').data()
         print(fields)
         return fields
 

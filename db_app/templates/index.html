@@ -50,8 +50,9 @@
     <br/>
     <br/>
     <br/>
+{% if buzzWordFields != None %}
     <h3>Buzz words</h3>
-    {% for field in buzzWords %}
+    {% for field in buzzWordFields %}
       <ul>
         <li>
           <a href="#">{{field['name']}}</a>
@@ -70,6 +71,17 @@
         </li>
       </ul>
     {% endfor %}
+{% endif %}
+    <div class="btn-group">
+      <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        Buzz words
+      </button>
+      <div class="dropdown-menu">
+        {%for buzzword in buzzWords %}
+            <a class="dropdown-item" href="/{{buzzword}}">{{buzzword}}</a>
+        {% endfor %}
+      </div>
+    </div>
 
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
