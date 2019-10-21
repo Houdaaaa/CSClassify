@@ -20,7 +20,8 @@ def index(bw):
     Database.add_is_linked_to_relationship('cloud computing', 'memory management' )
     Database.add_is_linked_to_relationship('cloud computing', 'files systems')
     Database.add_is_linked_to_relationship('cloud computing', 'object-oriented')
-    Database.add_is_linked_to_relationship('cloud computing', 'threads')'''
+    Database.add_is_linked_to_relationship('cloud computing', 'threads')
+    Database.add_is_linked_to_relationship('cloud computing', 'Computer systems')'''
     if bw != None:
         buzzWordFields = Database.find_buzz_word_fields(bw)
     else:
