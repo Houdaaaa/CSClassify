@@ -53,16 +53,19 @@
     <br/>
     <br/>
     <br/>
-    <h3>Buzz words</h3>
-    <div class="btn-group">
-      <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        cloud computing
-      </button>
-      <div class="dropdown-menu">
-        {%for buzzword in buzzWords %}
-            <a class="dropdown-item" href="/{{buzzword}}">{{buzzword}}</a>
+
+    <div class="form-group col-md-2">
+      <label for="inputState">Buzz Words</label>
+      <select id="inputState" class="form-control" onchange="location = this.value;">
+        {%for buzzword in buzzWords  %}
+          {% if buzzword == word %}
+            <option value="/{{buzzword}}" selected>{{buzzword}}</option>
+          {% endif %}
+          {% if buzzword != word %}
+            <option value="/{{buzzword}}" >{{buzzword}}</option>
+          {% endif %}
         {% endfor %}
-      </div>
+      </select>
     </div>
 
     {% if buzzWordFields != None %}

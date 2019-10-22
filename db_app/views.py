@@ -23,7 +23,6 @@ def index(bw):
     Database.add_is_linked_to_relationship('cloud computing', 'threads')
     Database.add_is_linked_to_relationship('cloud computing', 'Computer systems')
     Database.add_is_linked_to_relationship('cloud computing', 'real-time systems')'''
-    Database.add_is_linked_to_relationship('cloud computing', 'frameworks')
 
     if bw != None:
         buzzWordFields = Database.find_buzz_word_fields(bw)
@@ -33,7 +32,7 @@ def index(bw):
     buzzWords = Database.find_buzz_words()[0]['names']
     print(buzzWords)
 
-    return render_template('index.html', allFields=allFields, buzzWordFields=buzzWordFields, buzzWords=buzzWords )
+    return render_template('index.html', allFields=allFields, buzzWordFields=buzzWordFields, buzzWords=buzzWords, word=bw )
 
 @app.route('/questions/<fieldName>')
 def display_questions(fieldName):
