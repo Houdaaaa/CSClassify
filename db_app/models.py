@@ -153,9 +153,17 @@ class Database():   #classe statique?
     @staticmethod
     def find_buzz_word_fields(buzzword):
         #fields = Database.find_sub_nodes(buzzword, 'is_linked_to') str has no attribute field
-        fields2 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f3: Field)<-[:include]-(f2: Field)
+        fields2 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f3: Field{level:3})<-[:include]-(f2: Field)
                                OPTIONAL MATCH (f2)<-[:include]-(f1:Field) 
                                RETURN f2.name AS name, collect(f3.name) AS subfields, f1.name AS name_lev1''', name=buzzword).data()
+
+        lev1 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f1: Field{level:1})
+                            RETURN f1.name AS name_lev1''',name=buzzword).data()
+
+        lev2 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f2: Field{level:2})<-[:include]-(f1: Field)
+                               RETURN f2.name AS name, f1.name AS name_lev1''', name=buzzword).data()  #autre moyen avec count() et -[:*1..3]-> pour plus d'extensibilité
+
+
 
         print('ok')
         print(fields2)
@@ -165,6 +173,23 @@ class Database():   #classe statique?
             level1 = field['name_lev1']
             del field['name_lev1']
             finalDict['name'] = level1  #si la clé existe, donnée écrasée , non attention il y  aun append a faire
+            finalDict['subfields'] = field       #'subfields': {'name': 'process management', 'subfields': ['threads']}}
+            finalList.append(finalDict)
+
+        for field in lev1:
+            finalDict = {}
+            level1 = field['name_lev1']
+            del field['name_lev1']
+            finalDict['name'] = level1  # si la clé existe, donnée écrasée , non attention il y  aun append a faire
+            finalDict['subfields'] = {}
+            finalList.append(finalDict)
+
+        for field in lev2:
+            finalDict = {}
+            level1 = field['name_lev1']
+            del field['name_lev1']
+            finalDict['name'] = level1  # si la clé existe, donnée écrasée , non attention il y  aun append a faire
+            field['subfields'] = []
             finalDict['subfields'] = field
             finalList.append(finalDict)
 
@@ -193,13 +218,9 @@ class Database():   #classe statique?
 
     @staticmethod
     def delete_relation(field1, field2, relationName):
-        field1Name = field1.get_name()
-        field1Level = field1.get_level()
-        field2Name = field2.get_name()
-        field2Level = field2.get_level()
 
-        startNode= Database.find_one_field(field1Name)  #add levels?
-        endNode= Database.find_one_field(field2Name)
+        startNode= Database.find_one_field(field1)  #add levels?
+        endNode= Database.find_one_field(field2) #name
 
         relationship = graph.match_one(nodes= (startNode, endNode), r_type=relationName)
         graph.separate(relationship)

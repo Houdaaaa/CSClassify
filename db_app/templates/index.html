@@ -50,28 +50,10 @@
     <br/>
     <br/>
     <br/>
-{% if buzzWordFields != None %}
+    <br/>
+    <br/>
+    <br/>
     <h3>Buzz words</h3>
-    {% for field in buzzWordFields %}
-      <ul>
-        <li>
-          <a href="#">{{field['name']}}</a>
-            <ul>
-              <li>
-                <a href="#">{{field['subfields']['name']}}</a>
-                {% for subsubfield in field['subfields']['subfields'] %}
-                  <ul>
-                    <li>
-                      <a href="#">{{subsubfield}}</a>
-                    </li>
-                  </ul>
-                {% endfor %}
-              </li>
-            </ul>
-        </li>
-      </ul>
-    {% endfor %}
-{% endif %}
     <div class="btn-group">
       <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         cloud computing
@@ -82,6 +64,28 @@
         {% endfor %}
       </div>
     </div>
+
+    {% if buzzWordFields != None %}
+        {% for field in buzzWordFields %}
+          <ul>
+            <li>
+              <a href="#">{{field['name']}}</a>
+                <ul>
+                  <li>
+                    <a href="#">{{field['subfields']['name']}}</a>
+                    {% for subsubfield in field['subfields']['subfields'] %}
+                      <ul>
+                        <li>
+                          <a href="#">{{subsubfield}}</a>
+                        </li>
+                      </ul>
+                    {% endfor %}
+                  </li>
+                </ul>
+            </li>
+          </ul>
+        {% endfor %}
+    {% endif %}
 
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
