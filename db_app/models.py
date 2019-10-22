@@ -145,7 +145,9 @@ class Database():   #classe statique?
     '''faut-t-il afficher les questions même pour un niveau 1?'''
     @staticmethod
     def find_buzz_words():
-        fields = graph.run('''MATCH (f:BuzzWord) 
+        fields = graph.run('''MATCH (f:BuzzWord)
+                              WITH f
+                              ORDER BY f.name
                               RETURN collect(f.name) AS names''').data()
         print(fields)
         return fields
@@ -153,28 +155,28 @@ class Database():   #classe statique?
     @staticmethod
     def find_buzz_word_fields(buzzword):
         #fields = Database.find_sub_nodes(buzzword, 'is_linked_to') str has no attribute field
-        fields2 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f3: Field{level:3})<-[:include]-(f2: Field)
+        lev3 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f3: Field{level:3})<-[:include]-(f2: Field)
                                OPTIONAL MATCH (f2)<-[:include]-(f1:Field) 
-                               RETURN f2.name AS name, collect(f3.name) AS subfields, f1.name AS name_lev1''', name=buzzword).data()
+                               WITH f2, f3, f1
+                               ORDER BY f2.name
+                               RETURN f2.name AS name, collect(f3.name) AS subfields, f1.name AS name_lev1
+                               ORDER BY f1.name''', name=buzzword).data()
 
         lev1 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f1: Field{level:1})
-                            RETURN f1.name AS name_lev1''',name=buzzword).data()
+                            RETURN f1.name AS name_lev1
+                            ORDER BY f1.name''',name=buzzword).data()
 
         lev2 = graph.run('''MATCH (b: BuzzWord{name:{name}})-[:is_linked_to]->(f2: Field{level:2})<-[:include]-(f1: Field)
-                               RETURN f2.name AS name, f1.name AS name_lev1''', name=buzzword).data()  #autre moyen avec count() et -[:*1..3]-> pour plus d'extensibilité
+                            WITH f2, f1
+                            ORDER BY f2.name
+                            RETURN f2.name AS name, f1.name AS name_lev1
+                            ORDER BY f1.name''', name=buzzword).data()  #autre moyen avec count() et -[:*1..3]-> pour plus d'extensibilité
 
 
 
         print('ok')
-        print(fields2)
+        print(lev3)
         finalList = []
-        for field in fields2:
-            finalDict = {}
-            level1 = field['name_lev1']
-            del field['name_lev1']
-            finalDict['name'] = level1  #si la clé existe, donnée écrasée , non attention il y  aun append a faire
-            finalDict['subfields'] = field       #'subfields': {'name': 'process management', 'subfields': ['threads']}}
-            finalList.append(finalDict)
 
         for field in lev1:
             finalDict = {}
@@ -193,8 +195,21 @@ class Database():   #classe statique?
             finalDict['subfields'] = field
             finalList.append(finalDict)
 
-        print(finalList) #liste de dico dont les clé sont des dico dont les clé sont des listes
-        return finalList
+        for field in lev3:
+            finalDict = {}
+            level1 = field['name_lev1']
+            del field['name_lev1']
+            finalDict['name'] = level1  #si la clé existe, donnée écrasée , non attention il y  aun append a faire
+            #field['subfields'] = sorted(field['subfields']) #order list lev 3 --> ne sert plus car order by? test
+            finalDict['subfields'] = field       #'subfields': {'name': 'process management', 'subfields': ['threads']}}
+            finalList.append(finalDict)
+
+        #order alphabetically lev 1
+        sortedFinalList = sorted(finalList, key=lambda k: k['name'])
+        # print(finalList) #liste de dico dont les clé sont des dico dont les clé sont des listes
+
+        return sortedFinalList
+
     '''delete the field and all its relationships'''
     @staticmethod
     def delete_field(field):        #supprime tous les noeuds ayant le même nom, utiliser id? corriger pour avoir field avec nom unique
@@ -256,7 +271,8 @@ class Database():   #classe statique?
     def find_questions(field):
         nameField = field.get_name()
         questions = graph.run('''MATCH (f:Field{name: {name}})-[:include*0..2]->(f2:Field)-[:question]->(q:Question)
-                                          RETURN q.title AS title, q.answer AS answer ''', name=nameField).data() #return list of dictionnaries
+                                 RETURN q.title AS title, q.answer AS answer 
+                                 ORDER BY q.title''', name=nameField).data() #return list of dictionnaries
 
         return questions
 
@@ -265,14 +281,24 @@ class Database():   #classe statique?
     def find_subfields(nameField):
         fields = graph.run('''MATCH (f:Field{name:{name}})-[:include]->(f2:Field) 
                               OPTIONAL MATCH (f)-[:include]->(f2)-[:include]->(f3:Field)
-                              RETURN f2.name AS name, collect(f3.name) AS subfields''', name=nameField).data() #list of dico, [] if level 3
-        print(fields)
+                              WITH f2, f3
+                              ORDER BY f3.name
+                              RETURN f2.name AS name, collect(f3.name) AS subfields
+                              ORDER BY f2.name''', name=nameField).data() #list of dico, [] if level 3
+
+
+        '''# alphabetical order
+        for x in fields:
+            sortedList = sorted(x['subfields'])
+            x['subfields'] = sortedList'''
+
         return fields
 
     @staticmethod
     def find_concerned_fields(nameField):
         fields = graph.run('''OPTIONAL MATCH (f:Field{name:{name}})-[:concerns]->(f2:Field) 
-                              RETURN f2.name AS name''',name=nameField).data()
+                              RETURN f2.name AS name
+                              ORDER BY f2.name''',name=nameField).data()
         print(fields)
         return fields
 
@@ -280,10 +306,16 @@ class Database():   #classe statique?
     @staticmethod
     def find_all_fields():
         levels_1_2 = graph.run('''MATCH (f:Field{level:1})-[:include]->(f2:Field) 
-                                  RETURN f.name AS name, collect(f2.name) AS subfields''').data()
+                                  WITH f, f2
+                                  ORDER BY f2.name
+                                  RETURN f.name AS name, collect(f2.name) AS subfields
+                                  ORDER BY f.name''').data()
 
         levels_2_3 = graph.run('''MATCH (f:Field{level:1})-[:include]->(f2:Field)-[:include]->(f3:Field)
-                                  RETURN f2.name AS name_L2, collect(f3.name) AS subfields_L3''').data()
+                                  WITH f2, f3
+                                  ORDER BY f3.name
+                                  RETURN f2.name AS name_L2, collect(f3.name) AS subfields_L3
+                                  ORDER BY f2.name''').data()
 
         allFields = []
         for rootField in levels_1_2:
@@ -307,6 +339,14 @@ class Database():   #classe statique?
                     subFieldDict["subfields"] = []
                     rootFieldDict["subfields"].append(subFieldDict)
             allFields.append(rootFieldDict)
+
+        # ordre alphabétique
+        for x in allFields:
+            sortedListOfDico = sorted(x["subfields"], key=lambda k: k['name'])   #sort a list of dico by key : name (level 2)
+            x["subfields"] = sortedListOfDico
+            '''for y in x["subfields"]:
+                sortedList = sorted(y["subfields"])  #sort simply a list of strings (level 3)
+                y["subfields"] = sortedList'''
         return allFields
 
     @staticmethod

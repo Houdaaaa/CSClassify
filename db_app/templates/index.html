@@ -72,14 +72,14 @@
         {% for field in buzzWordFields %}
           <ul>
             <li>
-              <a href="#">{{field['name']}}</a>
+              <a href="/questions/{{field['name']}}/">{{field['name']}}</a>
                 <ul>
                   <li>
-                    <a href="#">{{field['subfields']['name']}}</a>
+                    <a href="/questions/{{field['subfields']['name']}}/">{{field['subfields']['name']}}</a>
                     {% for subsubfield in field['subfields']['subfields'] %}
                       <ul>
                         <li>
-                          <a href="#">{{subsubfield}}</a>
+                          <a href="/questions/{{subsubfield}}/">{{subsubfield}}</a>
                         </li>
                       </ul>
                     {% endfor %}

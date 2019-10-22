@@ -34,7 +34,7 @@ def index(bw):
 
     return render_template('index.html', allFields=allFields, buzzWordFields=buzzWordFields, buzzWords=buzzWords, word=bw )
 
-@app.route('/questions/<fieldName>')
+@app.route('/questions/<fieldName>/')
 def display_questions(fieldName):
     field = Field(fieldName, 0) #A t-on besoin du level? à voir
     questionsList= Database.find_questions(field)
