@@ -375,3 +375,13 @@ class Database():   #classe statique?
             Database.add_subfield_relationship('mobile development', 'Visual Studio')
             Database.add_subfield_relationship('mobile development', 'Unity')
             Database.add_subfield_relationship('Software', 'os types')
+
+    @staticmethod
+    def create_buzz_words_links():
+        with app.open_resource('buzz_words_links.json') as file:
+            data = json.load(file)
+
+            for key, value in data.items():
+                Database.add_buzz_word(key)
+                for field in value:
+                    Database.add_is_linked_to_relationship(key, field)

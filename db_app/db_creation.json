@@ -3,10 +3,10 @@
     {
         "field": "Computer systems", "subfields":[
             {"subfield":"mobiles", "subsubfields":[]},
-            {"subfield":"embedded and cyber-physical systems", "subsubfields":["sensor networks", "robotic", "sensors and actuators", "system on chip", "embedded systems"]},
+            {"subfield":"embedded and cyber-physical systems", "subsubfields":["sensors networks", "robotic", "sensors & actuators", "system on chip", "embedded systems"]},
             {"subfield": "real-time systems", "subsubfields":[]},
             {"subfield": "distributed systems", "subsubfields":["cloud computing", "computer cluster", "grid computing"]},
-            {"subfield": "quantum computer system", "subsubfields":[]}
+            {"subfield": "quantum computer systems", "subsubfields":[]}
         ]
     },
     {
@@ -77,7 +77,7 @@
         "field": "Network & telecommunication", "subfields":[
             {"subfield": "networks architectures", "subsubfields": ["topologies", "design principles"]},
             {"subfield": "network equipments", "subsubfields": ["fibers", "bridges&switches", "routers", "adapters & repeaters", "physical firewalls"]},
-            {"subfield": "wireless & mobile telecommunication", "subsubfields": []},
+            {"subfield": "wireless & mobile telecommunications", "subsubfields": []},
             {"subfield": "network administration", "subsubfields": ["network cabling", "routing management", "security management", "access rights management"]},
             {"subfield": "services", "subsubfields": ["API"]},
             {"subfield": "network protocols", "subsubfields": []}

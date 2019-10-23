@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-@app.route('/', defaults={'bw': 'cloud computing'})
+@app.route('/', defaults={'bw': 'Cloud computing'})
 @app.route('/<bw>')
 def index(bw):
     allFields = Database.find_all_fields()
