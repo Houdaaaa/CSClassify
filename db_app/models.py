@@ -1,6 +1,10 @@
 from py2neo import Graph, Node, Relationship, NodeMatcher, matching
+import json
+from flask import Flask
+
 
 uri = "bolt://localhost:7687"
+app = Flask(__name__)
 #graph = Graph(username='neo4j', password='editx')
 
 graph = Graph(uri, user="neo4j", password="editx")
@@ -329,7 +333,8 @@ class Database():   #classe statique?
                     subFieldDict["name"] = field_L2['name_L2']
                     subFieldDict["subfields"] = []
                     for field_L3 in field_L2['subfields_L3']:
-                        subFieldDict["subfields"].append(field_L3)
+                        if field_L3 not in subFieldDict["subfields"]:   #to not have 2 x subfields of os-types and DBMS (one node but included by two fields
+                            subFieldDict["subfields"].append(field_L3)
                     rootFieldDict["subfields"].append(subFieldDict)
                     fields_used.append(field_L2['name_L2'])
             for field_L2_name in rootField['subfields']:  #pour level 2 qui n'ont pas de level 3, à refactorer
@@ -351,111 +356,22 @@ class Database():   #classe statique?
 
     @staticmethod
     def create_database():
-        dico=[
-              {
-                  'field': 'Computer systems', 'subfields':[
-                      {'subfield':'mobiles', 'subsubfields':[]},
-                      {'subfield':'embedded and cyber-physical systems', 'subsubfields':['sensor networks', 'robotic', 'sensors and actuators', 'system on chip', 'embedded systems']},
-                      {'subfield': 'real-time systems', 'subsubfields':[]},
-                      {'subfield': 'distributed systems', 'subsubfields':['cloud computing', 'computer cluster', 'grid computing']},
-                      {'subfield': 'operating systems', 'subsubfields':[]}
-                  ]
-              },
-              {
-                  'field': 'Operating systems', 'subfields':[
-                      {'subfield': 'protection & security', 'subsubfields':[]},
-                      {'subfield': 'I/O systems', 'subsubfields': []},
-                      {'subfield': 'architecture', 'subsubfields': ['monolytic', 'layered', 'VM based', 'micro-kernel', 'embedded', 'real-time', 'distributed']},
-                      {'subfield': 'process management', 'subsubfields': ['process synchronization', 'deadlocks', 'threads', 'cpu scheduling']},
-                      {'subfield': 'storage management', 'subsubfields': ['files systems', 'memory management']},
-                      {'subfield': 'os types', 'subsubfields': ['Linux', 'Windows', 'Macos']},
-                      {'subfield': 'mobile', 'subsubfields': ['IOS', 'Android', 'Windows']}
-                  ]
-              },
-              {
-                  'field': 'Programming', 'subfields':[
-                      {'subfield': 'good practices', 'subsubfields': []},
-                      {'subfield': 'compilers & interpreters', 'subsubfields': []},
-                      {'subfield': 'languages', 'subsubfields': ['C', 'C++', 'C#', 'Java', 'PHP', 'Python', 'Ruby', 'SQL', 'JS', 'R', 'Go', 'Assembleur', '.NET', 'Shell', 'Delphi', 'Smalltalk', 'XML', 'HTML/CSS', 'TypeScript', 'Haskell', 'Groovy', 'Perl','VHDL', 'Xquery', 'Matlab', 'Kotlin', 'Scala', 'Swift']},
-                      {'subfield': 'paradigms', 'subsubfields': ['imperative & derivatives', 'object-oriented', 'declarative & derivatives']},
-                      {'subfield': 'frameworks', 'subsubfields': ['jQuery', 'AngularJS', 'ReactJS', 'Vue.js', 'Backbone', 'Symphonie', 'Laravel', 'Codeigniter', 'Zend', 'Spring', 'Hibernate', 'Hadoop', 'Spark', 'JSF', 'Django', 'Flask', 'ASP.NET', 'Meteor']}
-                  ]
-              },
-              {
-                  'field': 'Modeling, Design & Conception', 'subfields':[
-                      {'subfield': 'software architectures', 'subsubfields': []},
-                      {'subfield': 'software development methodologies & project management', 'subsubfields': []},
-                      {'subfield': 'UML', 'subsubfields': ['diagrams', 'design patterns']},
-                      {'subfield': 'good practices', 'subsubfields': []},
-                      {'subfield': 'test & software quality', 'subsubfields': []},
-                      {'subfield': 'version control & maintenance', 'subsubfields': []}
-                  ]
-              },
-              {
-                  'field': 'Visual computing', 'subfields':[
-                      {'subfield': 'image analysis & processing', 'subsubfields': ['2D', '3D & more']},
-                      {'subfield': 'virtual & augmented reality', 'subsubfields': []},
-                      {'subfield': 'user ergonomy', 'subsubfields': ['UX', 'UI']}
-                  ]
-              },
-              {
-                  'field': 'Artificial intelligence', 'subfields':[
-                      {'subfield': 'natural language processing', 'subsubfields': ['translation & speech', 'informations retrieval', 'language analysis']},
-                      {'subfield': 'machine learning', 'subsubfields': ['neural networks and deep learning', 'predictive analytics']},
-                      {'subfield': 'computer vision', 'subsubfields': ['machine vision', 'image processing and analysis']},
-                      {'subfield': 'decision support systems', 'subsubfields': []}
-                  ]
-              },
-              {
-                  'field': 'Databases', 'subfields':[
-                      {'subfield': 'ORM & ODM', 'subsubfields': []},
-                      {'subfield': 'NoSQL DB models', 'subsubfields': ['column', 'key-value', 'document', 'graphs']},
-                      {'subfield': 'relational DB models', 'subsubfields': []},
-                      {'subfield': 'DBMS', 'subsubfields': ['SQLite', 'PostgreSQL', 'FireBird', 'MariaDB', 'Microsof SQL server', 'Microsoft access', 'Oracle']}
-                  ]
-              },
-              {
-                  'field': 'Security', 'subfields':[
-                      {'subfield': 'systems security', 'subsubfields': []},
-                      {'subfield': 'architecture & design security', 'subsubfields': []},
-                      {'subfield': 'networks security', 'subsubfields': ['firewalls', 'router-switch security', 'intrusion detection & prevention systems', 'Email filtering']},
-                      {'subfield': 'cryptography', 'subsubfields': []},
-                      {'subfield': 'identify & access management', 'subsubfields': ['authentification & identification', 'access management']},
-                      {'subfield': 'business compliance', 'subsubfields': ['business continuity plan & procedures', 'compliance']}
-                  ]
-              },
-              {
-                  'field': 'Network & telecommunication', 'subfields':[
-                      {'subfield': 'networks architectures', 'subsubfields': ['topologies', 'design principles']},
-                      {'subfield': 'network equipment', 'subsubfields': ['fiber', 'bridges&switches', 'routers', 'adapters & repeaters', 'physical firewalls']},
-                      {'subfield': 'wireless & mobile telecommunication', 'subsubfields': []},
-                      {'subfield': 'network administration', 'subsubfields': ['network cabling', 'routing management', 'security management', 'access rights management']},
-                      {'subfield': 'services', 'subsubfields': ['API', 'cloud computing']},
-                      {'subfield': 'network protocols', 'subsubfields': []}
-                  ]
-              },
-              {
-                  'field': 'Software', 'subfields':[
-                      {'subfield': 'software development', 'subsubfields': []},
-                      {'subfield': 'mobile development', 'subsubfields': []},
-                      {'subfield': 'ERP&CRM', 'subsubfields': []},
-                      {'subfield': 'CMS', 'subsubfields': []},
-                      {'subfield': 'computer graphics & animations', 'subsubfields': []},
-                      {'subfield': 'gaming development', 'subsubfields': []},
-                      {'subfield': 'libraries', 'subsubfields': []},
-                      {'subfield': 'CAD', 'subsubfields': []}
-                  ]
-              }
-        ]
+        with app.open_resource('db_creation.json') as file:
+            fields = json.load(file)['items']
 
-        for field in dico:
-            Database.add_field(field['field'], 1)
-            for subfield in field['subfields']:
-                Database.add_field(subfield['subfield'], 2)
-                Database.add_subfield_relationship(field['field'], subfield['subfield'])
-                for subsubfield in subfield['subsubfields']:
-                    Database.add_field(subsubfield, 3)
-                    Database.add_subfield_relationship(subfield['subfield'], subsubfield)
+            for field in fields:
+                Database.add_field(field['field'], 1)
+                for subfield in field['subfields']:
+                    Database.add_field(subfield['subfield'], 2)
+                    Database.add_subfield_relationship(field['field'], subfield['subfield'])
+                    for subsubfield in subfield['subsubfields']:
+                        Database.add_field(subsubfield, 3)
+                        Database.add_subfield_relationship(subfield['subfield'], subsubfield)
 
-    #def delete_subgraph
-    #def add subgraph
+            #Champs doubles, question : les level sont-ils bons?
+            Database.add_subfield_relationship('services', 'cloud computing')
+            Database.add_subfield_relationship('Software', 'DBMS')
+            Database.add_subfield_relationship('Computer systems', 'Operating systems') # car os a plsr champs, comment faire dans arborescence?
+            Database.add_subfield_relationship('mobile development', 'Visual Studio')
+            Database.add_subfield_relationship('mobile development', 'Unity')
+            Database.add_subfield_relationship('Software', 'os types')

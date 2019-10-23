@@ -1,0 +1,22 @@
+{
+  "firewalls": ["phycical firewalls"],
+  "wireless & mobile telecommunication": ["mobile", "embedded systems", "sensor networks"],
+  "network cabling" : ["network equipment"],
+  "routing management": ["routers"],
+  "security management": ["network security"],
+  "access right management": ["identify & access management"],
+  "cloud computing": ["distributed systems", "Databases"],
+  "computer systems": ["systems security"],
+  "business & compliance" : ["compliance"],
+  "os": ["os types"],
+  "software development": ["Modeling, Design & Conception"],
+  "good practices" : ["good design practices"],
+  "software architecture" : ["networks architectures", "architecture & design security"],
+  "software development methodologies & project management": ["ERP & CRM"],
+  "image analysis & processing" : ["computer vision"],
+  "user ergonomy" : ["computer graphics & animations","gaming development", "mobile development"],
+  "mobile": ["mobile development"],
+  "real-time systems": ["robotic", "embedded systems"],
+  "operating systems": ["Operating systems"],
+  "protection & security" : ["identify & access management"]
+}

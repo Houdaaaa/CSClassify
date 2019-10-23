@@ -1,5 +1,7 @@
 from .models import Field, Question, Database
 from flask import Flask, request, session, redirect, url_for, render_template, flash
+import json
+import os
 
 app = Flask(__name__)
 
@@ -7,6 +9,7 @@ app = Flask(__name__)
 @app.route('/<bw>')
 def index(bw):
     allFields = Database.find_all_fields()
+
     q1 = Question('titre1','reponse1')
     q2 = Question('titre2','reponse2')
     q3 = Question('titre3','reponse3')
@@ -23,6 +26,7 @@ def index(bw):
     Database.add_is_linked_to_relationship('cloud computing', 'threads')
     Database.add_is_linked_to_relationship('cloud computing', 'Computer systems')
     Database.add_is_linked_to_relationship('cloud computing', 'real-time systems')'''
+
 
     if bw != None:
         buzzWordFields = Database.find_buzz_word_fields(bw)
