@@ -355,7 +355,7 @@ class Database():   #classe statique?
         return allFields
 
     @staticmethod
-    def create_database():
+    def fields_creation():
         with app.open_resource('db_creation.json') as file:
             fields = json.load(file)['items']
 
@@ -377,7 +377,7 @@ class Database():   #classe statique?
             Database.add_subfield_relationship('Software', 'os types')
 
     @staticmethod
-    def create_buzz_words_links():
+    def buzz_words_links_creation():
         with app.open_resource('buzz_words_links.json') as file:
             data = json.load(file)
 
@@ -385,3 +385,19 @@ class Database():   #classe statique?
                 Database.add_buzz_word(key)
                 for field in value:
                     Database.add_is_linked_to_relationship(key, field)
+
+    @staticmethod
+    def fields_links_creation():
+        with app.open_resource('fields_links.json') as file:
+            data = json.load(file)
+
+            for key, value in data.items():
+                for field in value:
+                    Database.add_concerns_relationship(key, field)
+
+
+    @staticmethod
+    def database_creation():
+        Database.fields_creation()
+        Database.buzz_words_links_creation()
+        Database.fields_links_creation()
