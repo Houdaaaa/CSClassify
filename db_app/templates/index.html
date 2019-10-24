@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- responsible -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
   <!--<<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
@@ -11,45 +12,44 @@
 <body>
     <h1 class="title">Index</h1>
 
-    {% for field in allFields %}
-      <nav id="menu">
-        <label for="tm" id="toggle-menu">navigation <span class="drop-icon">▾</span></label>
-        <input type="checkbox" id="tm">
-        <ul class="main-menu clearfix">
-          <li><a href="/questions/{{field.name}}">{{field.name}}
-              <span class="drop-icon">▾</span>
-              <label title="Toggle Drop-down" class="drop-icon" for="sm1">▾</label>
-            </a>
-              <input type="checkbox" id="sm1">
-              <ul class="sub-menu">
-                {% for subfield in field.subfields %}
-                  {% if (subfield.subfields)  %}
-                    <li><a href="/questions/{{subfield.name}}">{{subfield.name}}
-                      <span class="drop-icon">▾</span>
-                      <label title="Toggle Drop-down" class="drop-icon" for="sm2">▾</label>
-                    </a>
-                    <input type="checkbox" id="sm2">
-                    <ul class="sub-menu">
-                      {% for subsubfield in subfield.subfields %}
-                        <li><a href="/questions/{{subsubfield}}">{{subsubfield}}</a></li>
-                      {% endfor %}
-                    </ul>
-                    </li>
-                  {% else %}
-                    <li><a href="/questions/{{subfield.name}}">{{subfield.name}}</a></li>
-                  {% endif %}
-                {% endfor %}
-              </ul>
-          </li>
-        </ul>
-      </nav>
-    {% endfor %}
+<!--
+hover over link which got the arrow, after reduce the size of window   to understand the logic behind it,
 
-    <br/>
-    <br/>
-    <br/>
-    <br/>
-    <br/>
+Watch me code this
+
+Video link https://youtu.be/4a0s2FO_SzM
+Series link https://youtu.be/2TNLCKR-kXk
+!-->
+
+<div class="container-fluid">
+    <div class="row">
+        {% for field in allFields %}
+            <div class="col-md-2 col-lg-2 ">
+                <ul class="main-menu">
+                    <li class="sub-menu sub-menu-1 center-block"><a class="btn-drop" href="#">{{field.name}}</a>
+                        <ul class="sub-menu-layout sub-menu-layout-1">
+                            {% for subfield in field.subfields %}
+                              {% if (subfield.subfields)  %}
+                                <li class="sub-menu sub-menu-2"><a class="btn-drop" href="#">{{subfield.name}}</a>
+                                    <ul class="sub-menu-layout sub-menu-layout-2">
+                                        {% for subsubfield in subfield.subfields %}
+                                            <li><a class="btn-drop" href="#">{{subsubfield}}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                              {% else %}
+                                <li><a class="btn-drop" href="#">{{subfield.name}}</a></li>
+                              {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+
     <br/>
     <br/>
     <br/>
@@ -91,6 +91,8 @@
           </ul>
         {% endfor %}
     {% endif %}
+
+
 
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
