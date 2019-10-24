@@ -73,18 +73,20 @@
           <ul>
             <li>
               <a href="/questions/{{field['name']}}/">{{field['name']}}</a>
-                <ul>
-                  <li>
-                    <a href="/questions/{{field['subfields']['name']}}/">{{field['subfields']['name']}}</a>
-                    {% for subsubfield in field['subfields']['subfields'] %}
-                      <ul>
-                        <li>
-                          <a href="/questions/{{subsubfield}}/">{{subsubfield}}</a>
-                        </li>
-                      </ul>
-                    {% endfor %}
-                  </li>
-                </ul>
+                {% if field['subfields']|length %}
+                    <ul>
+                      <li>
+                          <a href="/questions/{{field['subfields']['name']}}/">{{field['subfields']['name']}}</a>
+                        {% for subsubfield in field['subfields']['subfields'] %}
+                          <ul>
+                            <li>
+                              <a href="/questions/{{subsubfield}}/">{{subsubfield}}</a>
+                            </li>
+                          </ul>
+                        {% endfor %}
+                      </li>
+                    </ul>
+                {% endif %}
             </li>
           </ul>
         {% endfor %}

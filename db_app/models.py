@@ -1,17 +1,17 @@
-from py2neo import Graph, Node, Relationship, NodeMatcher, matching
+from py2neo import Graph, Node, Relationship, NodeMatcher
 import json
 from flask import Flask
 
-
-uri = "bolt://localhost:7687"
 app = Flask(__name__)
-#graph = Graph(username='neo4j', password='editx')
 
+# connection to te neo4j database
+uri = "bolt://localhost:7687"
 graph = Graph(uri, user="neo4j", password="editx")
+
 matcher = NodeMatcher(graph)
 
 
-class Field():
+class Field:
     def __init__(self, name, level):
         self.name = name
         self.level = level
@@ -22,39 +22,43 @@ class Field():
     def get_name(self):
         return self.name
 
-class Question():
-    def __init__(self, title, answer):
+
+class Question:
+    def __init__(self, title, url):
         self.title = title
-        self.answer = answer
+        self.url = url
 
     def get_title(self):
         return self.title
 
-    def get_answer(self):
-        return self.answer
+    def get_url(self):
+        return self.url
 
-class Database():   #classe statique?
-    def __init__(self, password):
-        self.password = password
+
+class Database:  # static class?
 
     @staticmethod
     def add_field(field, level):
-        '''name = field.get_name()
-        level = field.get_level()'''
-        fieldNode = Node('Field', name=field, level=level) #id?
-        graph.create(fieldNode)
+
+        """add a field to the database
+
+            :param field: the name of the field
+            :param level: the relationship level of the field"""
+
+        field_node = Node('Field', name=field, level=level)  # id?
+        graph.create(field_node)
 
     @staticmethod
     def add_question(question):
         title = question.get_title()
-        answer = question.get_answer()
-        questionNode = Node('Question', title=title, answer=answer)
-        graph.create(questionNode)
+        url = question.get_url()
+        question_node = Node('Question', title=title, url=url)
+        graph.create(question_node)
 
     @staticmethod
     def add_buzz_word(name):
-        buzzWord = Node('BuzzWord', name=name)
-        graph.create(buzzWord)
+        buzz_word = Node('BuzzWord', name=name)
+        graph.create(buzz_word)
 
     @staticmethod
     def add_subfield_relationship(field, subfield):
@@ -260,22 +264,22 @@ class Database():   #classe statique?
 
 
     @staticmethod
-    def edit_question(question, newTitle, newAnswer):  #ou passer directement l'objet newQuestion?
+    def edit_question(question, new_title, new_url):  # ou passer directement l'objet newQuestion?
         title = question.get_title()
-        answer = question.get_answer()
+        url = question.get_url()
 
-        questionNode = matcher.match("Question", title=title).first()
+        question_node = matcher.match("Question", title=title).first()
 
-        questionNode['title'] = newTitle
-        questionNode['answer'] = newAnswer
+        question_node['title'] = new_title
+        question_node['url'] = new_url
 
-        graph.push(questionNode)
+        graph.push(question_node)
 
     @staticmethod
     def find_questions(field):
         nameField = field.get_name()
         questions = graph.run('''MATCH (f:Field{name: {name}})-[:include*0..2]->(f2:Field)-[:question]->(q:Question)
-                                 RETURN q.title AS title, q.answer AS answer 
+                                 RETURN q.title AS title, q.url AS url 
                                  ORDER BY q.title''', name=nameField).data() #return list of dictionnaries
 
         return questions
@@ -300,7 +304,7 @@ class Database():   #classe statique?
 
     @staticmethod
     def find_concerned_fields(nameField):
-        fields = graph.run('''OPTIONAL MATCH (f:Field{name:{name}})-[:concerns]->(f2:Field) 
+        fields = graph.run('''OPTIONAL MATCH (f:Field{name:{name}})-[:concerns]-(f2:Field) 
                               RETURN f2.name AS name
                               ORDER BY f2.name''',name=nameField).data()
         print(fields)

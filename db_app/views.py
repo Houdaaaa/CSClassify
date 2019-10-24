@@ -35,7 +35,8 @@ def index(bw):
         buzzWordFields = None
 
     buzzWords = Database.find_buzz_words()[0]['names']
-    print(buzzWords)
+    print("zero")
+    print(buzzWordFields)
 
     return render_template('index.html', allFields=allFields, buzzWordFields=buzzWordFields, buzzWords=buzzWords, word=bw )
 
