@@ -26,11 +26,11 @@ Series link https://youtu.be/2TNLCKR-kXk
         {% for field in allFields %}
             <div class="col-md-2 col-lg-2 colonne-centree">
                 <ul class="main-menu">
-                    <li class="sub-menu sub-menu-1 center-block"><a class="btn-drop" href="/questions/{{field.name}}">{{field.name}}</a>
+                    <li class="sub-menu sub-menu-1 center-block "><a class="btn-drop" href="/questions/{{field.name}}">{{field.name}}</a>
                         <ul class="sub-menu-layout sub-menu-layout-1">
                             {% for subfield in field.subfields %}
                               {% if (subfield.subfields)  %}
-                                <li class="sub-menu sub-menu-2"><a class="btn-drop" href="/questions/{{subfield.name}}">{{subfield.name}}</a>
+                                <li class="sub-menu sub-menu-2 "><a class="btn-drop" href="/questions/{{subfield.name}}">{{subfield.name}}</a>
                                     <ul class="sub-menu-layout sub-menu-layout-2">
                                         {% for subsubfield in subfield.subfields %}
                                             <li><a class="btn-drop" href="/questions/{{subsubfield}}">{{subsubfield}}</a></li>
@@ -38,7 +38,7 @@ Series link https://youtu.be/2TNLCKR-kXk
                                     </ul>
                                 </li>
                               {% else %}
-                                <li><a class="btn-drop" href="#">{{subfield.name}}</a></li>
+                                <li><a class="btn-drop" href="/questions/{{subfield.name}}">{{subfield.name}}</a></li>
                               {% endif %}
                             {% endfor %}
                         </ul>

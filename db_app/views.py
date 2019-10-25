@@ -10,24 +10,16 @@ app = Flask(__name__)
 def index(bw):
     allFields = Database.find_all_fields()
 
-    q1 = Question('titre1','reponse1')
-    q2 = Question('titre2','reponse2')
-    q3 = Question('titre3','reponse3')
-    q4 = Question('titre4','reponse4')
-    q5 = Question('titre5', 'reponse5')
-    q6 = Question('titre6', 'reponse6')
-    q7 = Question('titre7', 'reponse7')
-    q8 = Question('titre8', 'reponse8')
+    q1 = Question('titre9','reponse1')
+    q2 = Question('titre10','reponse2')
+    q3 = Question('titre11','reponse3')
+    q4 = Question('titre12','reponse4')
+    q5 = Question('titre13', 'reponse5')
+    q6 = Question('titre14', 'reponse6')
+    q7 = Question('titre15', 'reponse7')
+    q8 = Question('titre16', 'reponse8')
 
-    '''Database.add_buzz_word('cloud computing')
-    Database.add_is_linked_to_relationship('cloud computing', 'memory management' )
-    Database.add_is_linked_to_relationship('cloud computing', 'files systems')
-    Database.add_is_linked_to_relationship('cloud computing', 'object-oriented')
-    Database.add_is_linked_to_relationship('cloud computing', 'threads')
-    Database.add_is_linked_to_relationship('cloud computing', 'Computer systems')
-    Database.add_is_linked_to_relationship('cloud computing', 'real-time systems')'''
 
-    #Database.database_creation()
 
     if bw != None:
         buzzWordFields = Database.find_buzz_word_fields(bw)

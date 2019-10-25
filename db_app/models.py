@@ -101,7 +101,7 @@ class Database:  # static class?
     @staticmethod
     def add_question_relationship(subfield, question):
         #subfieldName = subfield.get_name()
-        subfieldLevel = subfield.get_level()
+        #subfieldLevel = subfield.get_level()
         questionTitle = question.get_title()
 
         f = matcher.match("Field", name=subfield).first()

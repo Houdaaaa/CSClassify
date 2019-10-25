@@ -9,20 +9,62 @@
 <body>
     <h1 class="title">{{field}}</h1>
     <br />
-    {% for field in subfields %}
-        <ul>
-            <li>
-                <a href="/questions/{{field['name']}}">{{field['name']}}</a>
-                {% for subfield in field['subfields'] %}
-                    <ul>
-                        <li>
-                            <a href="/questions/{{subfield}}"> {{subfield}}</a>
-                        </li>
-                    </ul>
-                {% endfor %}
-            </li>
-        </ul>
-    {% endfor %}
+
+    <div class="container-fluid" >
+        <div class="row ">
+            <div class="col-md-10 col lg-10">
+                <div class="row ">
+                    {% for field in subfields %}
+                        <div class="col-md-2 col-lg-2 ">
+                            <ul>
+                                <li>
+                                    <a class="subfields blue" href="/questions/{{field['name']}}">{{field['name']}}</a>
+                                    {% for subfield in field['subfields'] %}
+                                        <ul>
+                                            <li>
+                                                <a class="subfields blue" href="/questions/{{subfield}}"> {{subfield}}</a>
+                                            </li>
+                                        </ul>
+                                    {% endfor %}
+                                </li>
+                            </ul>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-md-2 col lg-2">
+                <div class="row ">
+                    {% if concernedFields[0]['name'] != None %}
+                      <div class="card text-white bg-secondary mb-3" style="max-width: 18rem;"> <!-- p-3 mb-2 bg-secondary text-white -->
+                          <div class="card-header">Concerned fields</div>
+                          <div class="card-body">
+                            {% for concernedField in concernedFields %}
+                                <p class="card-text">
+                                    <ul>
+                                        <li>
+                                            <a class="subfields " href="/questions/{{concernedField['name']}}">{{concernedField['name']}}</a>
+                                            {% for field in concernedField['subfields'] %}
+                                                <ul>
+                                                    <li>
+                                                         <a class="subfields " href="/questions/{{field['name']}}">{{field['name']}}</a>
+                                                    </li>
+                                                </ul>
+                                            {% endfor %}
+                                        </li>
+                                    </ul>
+                                </p>
+                            {% endfor %}
+                          </div>
+                      </div>
+                    {% endif %}
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
     <br />
     {% for question in questionsList %}
         <div class="list-group">
@@ -30,22 +72,6 @@
         </div>
     {% endfor %}
 
-    {% if concernedFields[0]['name'] != None %}
-        <h3> concerned fields: </h3>
-        {% for concernedField in concernedFields %}
-            <ul>
-                <li>
-                    <a href="/questions/{{concernedField['name']}}">{{concernedField['name']}}</a>
-                    {% for field in concernedField['subfields'] %}
-                        <ul>
-                            <li>
-                                 <a href="/questions/{{field['name']}}">{{field['name']}}</a>
-                            </li>
-                        </ul>
-                    {% endfor %}
-                </li>
-            </ul>
-        {% endfor %}
-    {% endif %}
+
 </body>
 </html>
