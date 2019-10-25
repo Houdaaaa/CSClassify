@@ -1,9 +1,35 @@
+.form-control{
+    position: relative !important;
+}
 
+.center-1{
+	margin-left:40px;
+	margin-right:40px;
+}
+
+/*Centre les éléments inline dans les éléments possédant un attribut class="centre"*/
+.center-2{
+  background: #6a6868;
+  margin: 30px 30px;
+  padding: 10px;
+}
+
+a{
+    color: white
+}
 .title{
     position:relative;
     text-align:center;
+    margin-top:20px;
+    margin-bottom:20px;
+    color: grey;
 }
 
+.subtitle{
+    font-size:30px;
+    color: white;
+    margin-bottom: 30px;
+}
 
 /*
 hover over link which got the arrow, after reduce the size of window   to understand the logic behind it,
@@ -21,17 +47,20 @@ Series link https://youtu.be/2TNLCKR-kXk
 
 }
 
-div{
-    display:inline-block;
+.colonne-centree
+{
+    float: none;
+    margin: 0 auto;
 }
 
-.col-md-2 .col-lg-2{
-    text-align: center;
-    }
+
+
+
 
 body{
-	background-color:light-grey;
+	background-color:#f3f3f3;
 }
+
 
 .btn-drop{
 	display:block;
@@ -55,15 +84,15 @@ body{
 }
 
 .main-menu>li>a{
-	background:linear-gradient(to bottom, #008000, #000);
+	background:linear-gradient(to bottom, #09c, #000);
 }
 
 .sub-menu-layout-1>li>a{
-	background:linear-gradient(to bottom, #802000, #000);
+	background:linear-gradient(to bottom, #09c, #000);
 }
 
 .sub-menu-layout-2>li>a{
-	background:linear-gradient(to bottom, #008080, #000);
+	background:linear-gradient(to bottom, #09c, #000);
 }
 
 .main-menu>li:not(:first-child){
@@ -117,6 +146,7 @@ body{
 
 li>a:hover{
 	font-size:21px;
+	color:#f3f3f3;
 }
 
 .sub-menu-layout{

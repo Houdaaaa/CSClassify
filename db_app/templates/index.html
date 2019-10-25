@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- responsible -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
@@ -9,8 +9,8 @@
 
   <title>EDITx</title>
 </head>
-<body>
-    <h1 class="title">Index</h1>
+
+    <h1 class="title">EDITx classification</h1>
 
 <!--
 hover over link which got the arrow, after reduce the size of window   to understand the logic behind it,
@@ -21,19 +21,19 @@ Video link https://youtu.be/4a0s2FO_SzM
 Series link https://youtu.be/2TNLCKR-kXk
 !-->
 
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid" >
+    <div class="row center-1">
         {% for field in allFields %}
-            <div class="col-md-2 col-lg-2 ">
+            <div class="col-md-2 col-lg-2 colonne-centree">
                 <ul class="main-menu">
-                    <li class="sub-menu sub-menu-1 center-block"><a class="btn-drop" href="#">{{field.name}}</a>
+                    <li class="sub-menu sub-menu-1 center-block"><a class="btn-drop" href="/questions/{{field.name}}">{{field.name}}</a>
                         <ul class="sub-menu-layout sub-menu-layout-1">
                             {% for subfield in field.subfields %}
                               {% if (subfield.subfields)  %}
-                                <li class="sub-menu sub-menu-2"><a class="btn-drop" href="#">{{subfield.name}}</a>
+                                <li class="sub-menu sub-menu-2"><a class="btn-drop" href="/questions/{{subfield.name}}">{{subfield.name}}</a>
                                     <ul class="sub-menu-layout sub-menu-layout-2">
                                         {% for subsubfield in subfield.subfields %}
-                                            <li><a class="btn-drop" href="#">{{subsubfield}}</a></li>
+                                            <li><a class="btn-drop" href="/questions/{{subsubfield}}">{{subsubfield}}</a></li>
                                         {% endfor %}
                                     </ul>
                                 </li>
@@ -50,48 +50,53 @@ Series link https://youtu.be/2TNLCKR-kXk
 </div>
 
 
-    <br/>
-    <br/>
-    <br/>
-
-    <div class="form-group col-md-2">
-      <label for="inputState">Buzz Words</label>
-      <select id="inputState" class="form-control" onchange="location = this.value;">
-        {%for buzzword in buzzWords  %}
-          {% if buzzword == word %}
-            <option value="/{{buzzword}}" selected>{{buzzword}}</option>
-          {% endif %}
-          {% if buzzword != word %}
-            <option value="/{{buzzword}}" >{{buzzword}}</option>
-          {% endif %}
-        {% endfor %}
-      </select>
+<div class="center-2" style="background:#6a6868">
+    <div class="col-md-3 col-lg-3"  >
+        <div class="form-group ">
+          <label class="subtitle" for="inputState">Buzz Words</label>
+          <select id="inputState" class="form-control" onchange="location = this.value;">
+            {%for buzzword in buzzWords  %}
+              {% if buzzword == word %}
+                <option value="/{{buzzword}}" selected>{{buzzword}}</option>
+              {% endif %}
+              {% if buzzword != word %}
+                <option value="/{{buzzword}}" >{{buzzword}}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
     </div>
 
-    {% if buzzWordFields != None %}
-        {% for field in buzzWordFields %}
-          <ul>
-            <li>
-              <a href="/questions/{{field['name']}}/">{{field['name']}}</a>
-                {% if field['subfields']|length %}
-                    <ul>
-                      <li>
-                          <a href="/questions/{{field['subfields']['name']}}/">{{field['subfields']['name']}}</a>
-                        {% for subsubfield in field['subfields']['subfields'] %}
-                          <ul>
-                            <li>
-                              <a href="/questions/{{subsubfield}}/">{{subsubfield}}</a>
-                            </li>
-                          </ul>
-                        {% endfor %}
-                      </li>
-                    </ul>
-                {% endif %}
-            </li>
-          </ul>
-        {% endfor %}
-    {% endif %}
-
+    <div class="container-fluid" >
+        <div class="row center">
+            {% if buzzWordFields != None %}
+                {% for field in buzzWordFields %}
+                  <div class="col-md-3 col-lg-3">
+                      <ul>
+                        <li>
+                          <a href="/questions/{{field['name']}}/">{{field['name']}}</a>
+                            {% if field['subfields']|length %}
+                                <ul>
+                                  <li>
+                                      <a href="/questions/{{field['subfields']['name']}}/">{{field['subfields']['name']}}</a>
+                                    {% for subsubfield in field['subfields']['subfields'] %}
+                                      <ul>
+                                        <li>
+                                          <a href="/questions/{{subsubfield}}/">{{subsubfield}}</a>
+                                        </li>
+                                      </ul>
+                                    {% endfor %}
+                                  </li>
+                                </ul>
+                            {% endif %}
+                        </li>
+                      </ul>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
 
 
 
