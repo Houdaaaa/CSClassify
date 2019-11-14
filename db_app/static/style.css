@@ -4,7 +4,7 @@
 	margin-right:40px;
 }
 
-/*Centre les éléments inline dans les éléments possédant un attribut class="centre"*/
+
 .center-2{
   background: #6a6868;
   margin: 30px 30px;
@@ -49,21 +49,6 @@ a{
 .card-body{
     background-color:#7f7f7f;
 }
-/*
-hover over link which got the arrow, after reduce the size of window   to understand the logic behind it,
-
-Watch me code this
-
-Video link https://youtu.be/4a0s2FO_SzM
-Series link https://youtu.be/2TNLCKR-kXk
-*/
-
-*{
-	margin:0;
-	font-family:helvetica;
-	font-size:20px;
-
-}
 
 .colonne-centree
 {
@@ -72,8 +57,21 @@ Series link https://youtu.be/2TNLCKR-kXk
 }
 
 
+/*
+    hover over link which got the arrow, after reduce the size of window   to understand the logic behind it,
 
+    Watch me code this
 
+    Video link https://youtu.be/4a0s2FO_SzM
+    Series link https://youtu.be/2TNLCKR-kXk
+*/
+
+*{
+	margin:0;
+	font-family:helvetica;
+	font-size:20px;
+
+}
 
 body{
 	background-color:#f3f3f3;

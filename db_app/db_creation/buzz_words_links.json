@@ -13,8 +13,10 @@
   "Quantum computing": ["Artificial intelligence", "quantum computer systems"],
   "Virtual reality" : ["virtual & augmented reality", "CAD", "user ergonomy", "image analysis & processing", "natural language processing", "real-time systems", "embedded systems"],
   "Data science" : ["data mining", "machine learning", "Databases", "distributed systems"],
-  "IOT" : ["embedded systems", "robotic", "sensors & actuators", "sensors networks", "system on chip", "systems security", "cloud computing", "Databases", "API", "wireless & mobile telecommunications", "network equipments"],
+  "IOT" : ["embedded systems", "robotic", "sensors & actuators", "sensors networks", "system on chip", "systems security", "cloud computing", "Databases", "API",
+           "wireless & mobile telecommunications", "network equipments"],
   "Business intelligence" : ["decision support systems", "cloud computing", "ERP & CRM"],
   "Edge computing": ["sensors networks", "distributed systems", "API", "cloud computing"],
-  "4.0 Industry": ["sensors & actuators", "robotic", "sensors networks", "embedded systems", "wireless & mobile telecommunications", "networks architectures", "digital transformation", "ethics", "systems security"]
+  "4.0 Industry": ["sensors & actuators", "robotic", "sensors networks", "embedded systems", "wireless & mobile telecommunications", "networks architectures",
+                   "digital transformation", "ethics", "systems security"]
 }

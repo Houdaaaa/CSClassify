@@ -1,49 +1,39 @@
-from .models import Field, Question, Database
-from flask import Flask, request, session, redirect, url_for, render_template, flash
-import json
-import os
+from .models import Database
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
-@app.route('/', defaults={'bw': 'Cloud computing'})
+
+@app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
 def index(bw):
-    allFields = Database.find_all_fields()
+    all_fields = Database.find_all_fields()
 
-    q1 = Question('titre9','reponse1')
-    q2 = Question('titre10','reponse2')
-    q3 = Question('titre11','reponse3')
-    q4 = Question('titre12','reponse4')
-    q5 = Question('titre13', 'reponse5')
-    q6 = Question('titre14', 'reponse6')
-    q7 = Question('titre15', 'reponse7')
-    q8 = Question('titre16', 'reponse8')
+    buzzwords = Database.find_buzz_words()[0]['names']
 
-
-
-    if bw != None:
-        buzzWordFields = Database.find_buzz_word_fields(bw)
+    if bw is not None:
+        buzzword_fields = Database.find_buzz_word_fields(bw)
     else:
-        buzzWordFields = None
+        buzzword_fields = None
 
-    buzzWords = Database.find_buzz_words()[0]['names']
-    print("zero")
-    print(buzzWordFields)
+    return render_template('index.html', allFields=all_fields, buzzWords=buzzwords, buzzWordFields=buzzword_fields,
+                           word=bw)
 
-    return render_template('index.html', allFields=allFields, buzzWordFields=buzzWordFields, buzzWords=buzzWords, word=bw )
 
-@app.route('/questions/<fieldName>/')
-def display_questions(fieldName):
-    field = Field(fieldName, 0) #A t-on besoin du level? à voir
-    questionsList= Database.find_questions(field)
-    subfields= Database.find_subfields(fieldName)
-    concernedFieldsName = Database.find_concerned_fields(fieldName) #return list of dico [{'name' : 'os'}, {}]
-    concernedFields = []
-    for field in concernedFieldsName:
-        concernedField = {}
-        concernedField['name'] = field['name']
-        concernedField['subfields'] = (Database.find_subfields(field['name']))# liste de dico
-        concernedFields.append(concernedField)
-    print(concernedFields) #Liste de dico (un dico pour chaque concernedFieldsName), dans ce dico la clé subfields est une liste de subfields (rpzté en dico)
+@app.route('/questions/<field_name>/')
+def display_questions(field_name):
+    questions_list = Database.find_questions(field_name)
+    subfields = Database.find_subfields(field_name)
+    concerned_fields_name = Database.find_concerned_fields(field_name)  # return list of dictionaries
+                                                                        # example: [{'name' : 'os'}, {}]
 
-    return render_template('questions.html', field=fieldName, questionsList=questionsList, subfields=subfields, concernedFields=concernedFields)
+    concerned_fields = []  # list of dictionaries --> one dict for each concerned_field
+                                               #  --> key "subfields is a list of subfields
+    for field in concerned_fields_name:
+        concerned_field = {}
+        concerned_field['name'] = field['name']
+        concerned_field['subfields'] = (Database.find_subfields(field['name']))  # return list of dictionaries
+        concerned_fields.append(concerned_field)
+
+    return render_template('questions.html', field=field_name, questionsList=questions_list, subfields=subfields,
+                           concernedFields=concerned_fields)

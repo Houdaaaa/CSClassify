@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    
     <title>Questions</title>
 </head>
+
 <body>
     <h1 class="title">{{field}}</h1>
     <br />
@@ -60,8 +62,6 @@
                     {% endif %}
                 </div>
             </div>
-
-
         </div>
     </div>
 
@@ -71,7 +71,6 @@
             <a href="/" class="list-group-item list-group-item-action">{{question['title']}}</a>
         </div>
     {% endfor %}
-
 
 </body>
 </html>
