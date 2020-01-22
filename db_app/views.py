@@ -7,6 +7,8 @@ app = Flask(__name__)
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
 def index(bw):
+    #Database.database_creation()
+
     all_fields = Database.find_all_fields()
 
     buzzwords = Database.find_buzz_words()[0]['names']
@@ -37,3 +39,7 @@ def display_questions(field_name):
 
     return render_template('questions.html', field=field_name, questionsList=questions_list, subfields=subfields,
                            concernedFields=concerned_fields)
+
+
+if __name__ == "__main__":
+    app.run()
