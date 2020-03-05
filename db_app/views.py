@@ -1,4 +1,4 @@
-from .models import Database
+from models import Database
 from flask import Flask, render_template
 
 app = Flask(__name__)
@@ -7,8 +7,8 @@ app = Flask(__name__)
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
 def index(bw):
-    #Database.database_creation()
 
+    # Database.database_creation()
     all_fields = Database.find_all_fields()
 
     buzzwords = Database.find_buzz_words()[0]['names']
