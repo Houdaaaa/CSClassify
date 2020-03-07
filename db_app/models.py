@@ -22,7 +22,18 @@ class Database:
             :param field: the name of the field
             :param level: the relationship level of the field"""
 
-        field_node = Node('Field', name=field, level=level)  # id?
+        field_node = Node('Field', name=field, level=level)
+        graph.create(field_node)
+
+    @staticmethod
+    def add_translated_field(field):
+
+        """adds a field to the database
+
+            :param field: the name of the field
+            :param level: the relationship level of the field"""
+
+        field_node = Node('Field', name=field)
         graph.create(field_node)
 
     @staticmethod
@@ -45,6 +56,57 @@ class Database:
 
         buzz_word = Node('BuzzWord', name=name)
         graph.create(buzz_word)
+
+    @staticmethod
+    def add_classification(name):  # User en param after
+
+        classification_node = Node('Classification', name=name)
+        graph.create(classification_node)
+
+        uuid = graph.run('''MATCH (c: Classification{name:{name}})  
+                            RETURN c.uuid AS uuid''', name=name).data()   #La requête doit obligatoirement se faire en 2 fois
+        print(uuid)
+        return uuid[0]['uuid']
+
+    @staticmethod
+    def add_subclassification_relationship(classification_id, l1_fields_list):
+
+        """l1_fields_list : list of names"""
+
+        f1 = matcher.match("Classification", uuid=classification_id).first()  # au lieu du name : id?
+
+        for field in l1_fields_list:
+            f2 = matcher.match("Field", name=field).first()  # id au lieu de field['name']?
+            graph.merge(Relationship(f1, 'include', f2))
+
+    @staticmethod
+    def add_translation_relationship(field, translated_field, language):
+
+        """ """
+        graph.run('''MATCH (f1:Field {name:{field}})
+                     MATCH (f2:Field {name:{translated_field}})
+                     CREATE UNIQUE (f1)-[:translate_into{language:{language}}]->(f2)''',
+                  field=field, translated_field=translated_field, language=language)
+
+
+        #f1 = matcher.match("Field", name=field).first()
+        #f2 = matcher.match("Field", name=translated_field).first()
+        #graph.merge(Relationship(f1, 'translate_into', f2))
+        #rel = graph.match(start_node=f1, rel_type="translate_into", end_node=f2)
+        #rel.properties["language"] = language
+        #rel.push()
+
+    @staticmethod
+    def add_fork_relationship(classification_uuid, ancestor_uuid):  #Attention ici on travaille avec les id
+
+        """adds a relationship between a field and its subfield to the database
+
+            :param ancestor: the id of the source classification
+            :param classification: the id of the new classification """
+
+        f1 = matcher.match("Classification", uuid=classification_uuid).first()
+        f2 = matcher.match("Classification", uuid=ancestor_uuid).first()
+        graph.merge(Relationship(f1, 'forked_from', f2))
 
     @staticmethod
     def add_subfield_relationship(field, subfield):
@@ -333,7 +395,7 @@ class Database:
                               OPTIONAL MATCH (f)-[:include]->(f2)-[:include]->(f3:Field)
                               WITH f2, f3
                               ORDER BY f3.name
-                              RETURN f2.name AS name, collect(f3.name) AS subfields
+                              RETURN f2.name AS name, collect(f3.name) AS subfields, f2.uuid AS uuid
                               ORDER BY f2.name''', name=field_name).data()  # empty list if level 3
 
         return fields
@@ -347,7 +409,7 @@ class Database:
             :returns: the names of the fields linked to the desired field"""
 
         fields = graph.run('''OPTIONAL MATCH (f:Field{name:{name}})-[:concerns]-(f2:Field) 
-                              RETURN f2.name AS name
+                              RETURN f2.name AS name, f2.uuid AS uuid
                               ORDER BY f2.name''', name=field_name).data()
 
         return fields
@@ -422,7 +484,7 @@ class Database:
 
         """Creates the classification into the database"""
 
-        with app.open_resource('db_creation/classification.json') as file:
+        with app.open_resource('db_creation/fields.json') as file:
             fields = json.load(file)['items']
 
             for field in fields:
@@ -467,6 +529,17 @@ class Database:
                 for field in value:
                     Database.add_concerns_relationship(key, field)
 
+
+    @staticmethod
+    def classification_creation(): #input : graph, output : dico de classification
+
+        with app.open_resource('db_creation/classification.json') as file:
+            data = json.load(file)
+
+            for key, value in data.items():
+                    classification_uuid = Database.add_classification(key) #ajouter condition "si n'existe pas"
+                    Database.add_subclassification_relationship(classification_uuid, value)
+
     @staticmethod
     def database_creation():
 
@@ -475,3 +548,4 @@ class Database:
         Database.fields_creation()
         Database.buzz_words_links_creation()
         Database.fields_links_creation()
+        Database.classification_creation()

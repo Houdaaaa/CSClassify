@@ -3,12 +3,12 @@ from flask import Flask, render_template
 
 app = Flask(__name__)
 
+#Database.database_creation()
 
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
 def index(bw):
 
-    # Database.database_creation()
     all_fields = Database.find_all_fields()
 
     buzzwords = Database.find_buzz_words()[0]['names']
@@ -34,6 +34,8 @@ def display_questions(field_name):
     for field in concerned_fields_name:
         concerned_field = {}
         concerned_field['name'] = field['name']
+        uuid = field['uuid']
+        print(uuid)
         concerned_field['subfields'] = (Database.find_subfields(field['name']))  # return list of dictionaries
         concerned_fields.append(concerned_field)
 
