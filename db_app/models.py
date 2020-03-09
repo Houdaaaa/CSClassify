@@ -1,15 +1,20 @@
 from py2neo import Graph, Node, Relationship, NodeMatcher
 import json
 from flask import Flask
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
-# connection to te neo4j database
+# connection to the neo4j database
 uri = "bolt://localhost:7687"
 graph = Graph(uri, user="neo4j", password="editx")
 
 #  Node matcher initialization
 matcher = NodeMatcher(graph)
+
+# connection to the MongoDB database
+client = MongoClient("mongodb://127.0.0.1:27017/")
+db=client.csclassify
 
 
 class Database:
@@ -543,9 +548,38 @@ class Database:
     @staticmethod
     def database_creation():
 
-        """Create the entire Editx Database"""
+        """Create the entire Neo4j Editx Database"""
 
         Database.fields_creation()
         Database.buzz_words_links_creation()
         Database.fields_links_creation()
         Database.classification_creation()
+
+    @staticmethod
+    def mongodb_creation():
+
+        """Create the entire MongoDB cs-classify Database"""
+
+        classification = {
+            'name': 'cs-classify',
+            'is_forked': False,
+            'details': 'blabla présentation',
+            'user_id': 123,
+            'logs': [
+                {'timestamp': 1,
+                 'request': 'MATCH(n:Classification) RETURN n'}
+            ]
+        }
+
+        users = {
+            'firstname': 'Houda',
+            'lastname': 'Hannouni',
+            'job': 'student',
+            'website': 'www.cs-classify.net',
+            'pseudo': 'Miss H',
+            'password': 'Blabla',
+            'graphs_id': 123456
+        }
+
+        db.Classification.insert_one(classification)  # Collection : Classification
+        db.Users.insert_one(users)  # Collection : Users

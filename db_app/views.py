@@ -1,9 +1,11 @@
 from models import Database
 from flask import Flask, render_template
+import pymongo
 
 app = Flask(__name__)
 
 #Database.database_creation()
+
 
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
