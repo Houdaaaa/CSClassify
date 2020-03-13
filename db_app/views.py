@@ -54,7 +54,9 @@ def login():
     if form.validate_on_submit():           #Si GET return False
         user = mongo.db.Users.find_one_or_404({"username": form.username.data})
         if user and User.check_password(user['password'], form.password.data):
-            user_obj = User(username=user['username'], email=user['email'])
+            user_obj = User( username=user['username'])
+            user_obj.set_var(lastname=user['lastname'], firstname=user['firstname'], email=user['email'],
+                                        job=user['job'], website_url=user['website_url'])
             login_user(user_obj, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if not next_page or url_parse(next_page).netloc != '':
@@ -78,7 +80,9 @@ def register():
 
     form = RegistrationForm()
     if form.validate_on_submit():
-        user_obj = User(username=form.username.data, email=form.email.data) #ici object ne sert à rien ? nn
+        user_obj = User(username=form.username.data)
+        user_obj.set_var(form.lastname.data, form.firstname.data, form.email.data, form.job.data,
+                                        form.website_url.data)
         user_obj.set_password(form.password.data)
         user_doc = user_obj.convert_to_doc()
         mongo.db.Users.insert_one(user_doc)

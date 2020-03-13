@@ -29,11 +29,18 @@ matcher = NodeMatcher(graph)
 
 class User:
 
-    #password = ''
+    #graphs_id = ''
+    #Add others param here?
 
-    def __init__(self, username, email):
+    def __init__(self, username):
         self.username = username
-        self.email = email
+        self.lastname = ''  #utile d'écrire ça comme ça ?
+        self.firstname = ''
+        self.email = ''
+        self.job = ''
+        self.website_url = ''
+        self.graphs_id = []
+
 
     @staticmethod
     def is_authenticated():
@@ -57,17 +64,64 @@ class User:
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
-    @login.user_loader
+    def get_username(self):
+        return self.username
+
+    def set_username(self, username):
+        self.username = username
+
+    def get_lastname(self):
+        return self.lastname
+
+    def set_lastname(self, lastname):
+        self.lastname = lastname
+
+    def get_firstname(self):
+        return self.firstname
+
+    def set_firstname(self, firstname):
+        self.firstname = firstname
+
+    def get_email(self):
+        return self.email
+
+    def set_email(self, email):
+        self.email = email
+
+    def get_job(self):
+        return self.job
+
+    def set_job(self, job):
+        self.job = job
+
+    def get_website_url(self):
+        return self.website_url
+
+    def set_website_url(self, website_url):
+        self.website_url = website_url
+
+    def set_var(self, lastname, firstname, email, job, website_url):
+        self.set_lastname(lastname)
+        self.set_firstname(firstname)
+        self.set_email(email)
+        self.set_job(job)
+        self.set_website_url(website_url)
+
+    @login.user_loader   #vérifier ce que fait load_user
     def load_user(username): #ou avec id
         u = mongo.db.Users.find_one({"username": username})   #find_one_or_404 ?
         if not u:
             return None
-        return User(username=u['username'], email=u['email'])
+        return User(username=u['username'])
 
     def convert_to_doc(self):
         doc = {
-            'username': self.username,
+            'lastname': self.lastname,
+            'firstname': self.firstname,
             'email': self.email,
+            'job': self.job,
+            'website_url': self.website_url,
+            'username': self.username,
             'password': self.password_hash
         }
 
