@@ -1,9 +1,23 @@
 from py2neo import Graph, Node, Relationship, NodeMatcher
 import json
 from flask import Flask
-from pymongo import MongoClient
+from flask_pymongo import PyMongo
+from flask_login import LoginManager, current_user, login_user, logout_user, login_required
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
+
+#app.config['MONGO_DBNAME'] = 'csclassify'
+app.config['MONGO_URI'] = 'mongodb://127.0.0.1:27017/csclassify'
+
+# connection to the MongoDB database
+mongo = PyMongo(app)
+
+# To use extension flask-login
+# login_manager = LoginManager()
+# login_manager.init_app(app)
+login = LoginManager(app)
+login.login_view = 'login'
 
 # connection to the neo4j database
 uri = "bolt://localhost:7687"
@@ -12,9 +26,52 @@ graph = Graph(uri, user="neo4j", password="editx")
 #  Node matcher initialization
 matcher = NodeMatcher(graph)
 
-# connection to the MongoDB database
-client = MongoClient("mongodb://127.0.0.1:27017/")
-db=client.csclassify
+
+class User:
+
+    #password = ''
+
+    def __init__(self, username, email):
+        self.username = username
+        self.email = email
+
+    @staticmethod
+    def is_authenticated():
+        return True
+
+    @staticmethod
+    def is_active():
+        return True
+
+    @staticmethod
+    def is_anonymous():
+        return False
+
+    def get_id(self):
+        return self.username
+
+    @staticmethod
+    def check_password(password_hash, password):
+        return check_password_hash(password_hash, password)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    @login.user_loader
+    def load_user(username): #ou avec id
+        u = mongo.db.Users.find_one({"username": username})   #find_one_or_404 ?
+        if not u:
+            return None
+        return User(username=u['username'], email=u['email'])
+
+    def convert_to_doc(self):
+        doc = {
+            'username': self.username,
+            'email': self.email,
+            'password': self.password_hash
+        }
+
+        return doc
 
 
 class Database:
@@ -69,7 +126,8 @@ class Database:
         graph.create(classification_node)
 
         uuid = graph.run('''MATCH (c: Classification{name:{name}})  
-                            RETURN c.uuid AS uuid''', name=name).data()   #La requête doit obligatoirement se faire en 2 fois
+                            RETURN c.uuid AS uuid''',
+                         name=name).data()  # La requête doit obligatoirement se faire en 2 fois
         print(uuid)
         return uuid[0]['uuid']
 
@@ -93,16 +151,15 @@ class Database:
                      CREATE UNIQUE (f1)-[:translate_into{language:{language}}]->(f2)''',
                   field=field, translated_field=translated_field, language=language)
 
-
-        #f1 = matcher.match("Field", name=field).first()
-        #f2 = matcher.match("Field", name=translated_field).first()
-        #graph.merge(Relationship(f1, 'translate_into', f2))
-        #rel = graph.match(start_node=f1, rel_type="translate_into", end_node=f2)
-        #rel.properties["language"] = language
-        #rel.push()
+        # f1 = matcher.match("Field", name=field).first()
+        # f2 = matcher.match("Field", name=translated_field).first()
+        # graph.merge(Relationship(f1, 'translate_into', f2))
+        # rel = graph.match(start_node=f1, rel_type="translate_into", end_node=f2)
+        # rel.properties["language"] = language
+        # rel.push()
 
     @staticmethod
-    def add_fork_relationship(classification_uuid, ancestor_uuid):  #Attention ici on travaille avec les id
+    def add_fork_relationship(classification_uuid, ancestor_uuid):  # Attention ici on travaille avec les id
 
         """adds a relationship between a field and its subfield to the database
 
@@ -121,11 +178,11 @@ class Database:
             :param field: the name of the field
             :param subfield: the name of the subfield"""
 
-        #if (fieldLevel < subfieldLevel):
+        # if (fieldLevel < subfieldLevel):
         f1 = matcher.match("Field", name=field).first()
         f2 = matcher.match("Field", name=subfield).first()
         graph.merge(Relationship(f1, 'include', f2))
-        #else:
+        # else:
         #    print("the level of the first param must be smaller than the level of the second")
 
     @staticmethod
@@ -136,11 +193,11 @@ class Database:
             :param buzzword: the name of the buzz word
             :param field: the name of the field linked to the buzz word"""
 
-        #if(field1Level > field2Level):
+        # if(field1Level > field2Level):
         f1 = matcher.match("BuzzWord", name=buzzword).first()
         f2 = matcher.match("Field", name=field).first()
         graph.merge(Relationship(f1, 'is_linked_to', f2))
-        #else:
+        # else:
         #    print("the level of the first param must be greater than the level of the second")
 
     @staticmethod
@@ -170,7 +227,6 @@ class Database:
         q = matcher.match("Question", title=question_title).first()
         graph.merge(Relationship(f, 'question', q))
 
-
     @staticmethod
     def find_one_field(name):
 
@@ -193,7 +249,8 @@ class Database:
         buzzword_node = matcher.match("BuzzWord", name=name).first()
         return buzzword_node
 
-    '''for questions and subfiels of a field'''     #attention juste pour un niveau, autre fonction pour trouver pour afficher tout le sous-graphe
+    '''for questions and subfiels of a field'''  # attention juste pour un niveau, autre fonction pour trouver pour afficher tout le sous-graphe
+
     @staticmethod
     def find_sub_nodes(field_name, relationName):
 
@@ -206,7 +263,7 @@ class Database:
         f = Database.find_one_field(field_name)
         node_list = []
         for rel in graph.match((f,), r_type=relationName):
-            node_list.append(rel.end_node)   # type of "rel.end_node" : Node
+            node_list.append(rel.end_node)  # type of "rel.end_node" : Node
         return node_list
 
     @staticmethod
@@ -350,7 +407,7 @@ class Database:
             :param new_name: the new name of the field
             :param new_level: the new level of the field"""
 
-        field_node=Database.find_one_field(field_name)
+        field_node = Database.find_one_field(field_name)
 
         field_node['name'] = new_name
         field_node['level'] = new_level
@@ -386,7 +443,6 @@ class Database:
                                  ORDER BY q.title''', name=field_name).data()
 
         return questions
-
 
     @staticmethod
     def find_subfields(field_name):
@@ -451,8 +507,8 @@ class Database:
                     sub_field_dict["name"] = field_L2['name_L2']
                     sub_field_dict["subfields"] = []
                     for field_L3 in field_L2['subfields_L3']:
-                        if field_L3 not in sub_field_dict["subfields"]:   # to not have 2 x subfields
-                           sub_field_dict["subfields"].append(field_L3)   # when one node included by two fields
+                        if field_L3 not in sub_field_dict["subfields"]:  # to not have 2 x subfields
+                            sub_field_dict["subfields"].append(field_L3)  # when one node included by two fields
                     root_field_dict["subfields"].append(sub_field_dict)
                     fields_used.append(field_L2['name_L2'])
 
@@ -467,8 +523,8 @@ class Database:
 
         # sorts alphabetically
         for x in all_fields:
-            sorted_list_of_dict = sorted(x["subfields"], key=lambda k: k['name'])   # sort a list of dictionaries by the
-                                                                                    # key: name (level 2)
+            sorted_list_of_dict = sorted(x["subfields"], key=lambda k: k['name'])  # sort a list of dictionaries by the
+            # key: name (level 2)
             x["subfields"] = sorted_list_of_dict
             '''for y in x["subfields"]:
                 sortedList = sorted(y["subfields"])  #sort simply a list of strings (level 3)
@@ -504,7 +560,8 @@ class Database:
             # because one node is linked to more of one other node
             Database.add_subfield_relationship('services', 'cloud computing')
             Database.add_subfield_relationship('Software', 'DBMS')
-            Database.add_subfield_relationship('Computer systems', 'Operating systems') # car os a plsr champs, comment faire dans arborescence?
+            Database.add_subfield_relationship('Computer systems',
+                                               'Operating systems')  # car os a plsr champs, comment faire dans arborescence?
             Database.add_subfield_relationship('mobile development', 'Visual Studio')
             Database.add_subfield_relationship('mobile development', 'Unity')
             Database.add_subfield_relationship('Software', 'os types')
@@ -534,16 +591,15 @@ class Database:
                 for field in value:
                     Database.add_concerns_relationship(key, field)
 
-
     @staticmethod
-    def classification_creation(): #input : graph, output : dico de classification
+    def classification_creation():  # input : graph, output : dico de classification
 
         with app.open_resource('db_creation/classification.json') as file:
             data = json.load(file)
 
             for key, value in data.items():
-                    classification_uuid = Database.add_classification(key) #ajouter condition "si n'existe pas"
-                    Database.add_subclassification_relationship(classification_uuid, value)
+                classification_uuid = Database.add_classification(key)  # ajouter condition "si n'existe pas"
+                Database.add_subclassification_relationship(classification_uuid, value)
 
     @staticmethod
     def database_creation():

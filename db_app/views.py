@@ -1,11 +1,11 @@
-from models import Database
-from flask import Flask, render_template
-import pymongo
+from werkzeug.urls import url_parse
+from werkzeug.utils import redirect
+from models import *
+from flask import Flask, render_template, url_for, request, flash
+from forms import LoginForm, RegistrationForm
 
-app = Flask(__name__)
 
-#Database.database_creation()
-
+# Database.database_creation()
 
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
@@ -45,5 +45,47 @@ def display_questions(field_name):
                            concernedFields=concerned_fields)
 
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    form = LoginForm()
+    if form.validate_on_submit():           #Si GET return False
+        user = mongo.db.Users.find_one_or_404({"username": form.username.data})
+        if user and User.check_password(user['password'], form.password.data):
+            user_obj = User(username=user['username'], email=user['email'])
+            login_user(user_obj, remember=form.remember_me.data)
+            next_page = request.args.get('next')
+            if not next_page or url_parse(next_page).netloc != '':
+                next_page = url_for('index')
+            return redirect(next_page)
+        else:
+            return redirect(url_for('login'))
+    return render_template('login.html', title='Sign In', form=form)
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user_obj = User(username=form.username.data, email=form.email.data) #ici object ne sert à rien ? nn
+        user_obj.set_password(form.password.data)
+        user_doc = user_obj.convert_to_doc()
+        mongo.db.Users.insert_one(user_doc)
+        return redirect(url_for('login'))
+    return render_template('register.html', title='Register', form=form)
+
+
 if __name__ == "__main__":
-    app.run()
+    app.secret_key = 'mysecret'  # to change and to securise
+    app.run(debug=True)
