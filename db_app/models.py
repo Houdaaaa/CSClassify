@@ -128,6 +128,9 @@ class User:
         return doc
 
 
+    #Ajouter comme méthodes : Login_Valide(email, password), Json, Register(username, email, password), save_to_mongo
+
+
 class Database:
 
     @staticmethod
@@ -585,6 +588,67 @@ class Database:
                 y["subfields"] = sortedList'''
 
         return all_fields
+
+    @staticmethod
+    def find_classification(name): #Ou ID?
+        levels_1_2 = graph.run('''MATCH (c:Classification{name:{name}})-[:include]->(f:Field{level:1})
+                                  -[:include]->(f2:Field) 
+                                  WITH f, f2
+                                  ORDER BY f2.name
+                                  RETURN f.name AS name, collect(f2.name) AS subfields
+                                  ORDER BY f.name''', name=name).data()
+
+        levels_2_3 = graph.run('''MATCH (c:Classification{name:{name}})-[:include]->(f:Field{level:1})-[:include]->
+                                  (f2:Field)-[:include]->(f3:Field)
+                                  WITH f2, f3
+                                  ORDER BY f3.name
+                                  RETURN f2.name AS name_L2, collect(f3.name) AS subfields_L3
+                                  ORDER BY f2.name''', name=name).data()
+
+        all_fields = []
+        for rootField in levels_1_2:
+            root_field_dict = {}
+            root_field_dict["name"] = rootField['name']
+            root_field_dict["subfields"] = []
+            fields_used = []
+
+            for field_L2 in levels_2_3:
+                if field_L2["name_L2"] in rootField['subfields']:  # rootField['subfields'] is an str list
+                    sub_field_dict = {}
+                    sub_field_dict["name"] = field_L2['name_L2']
+                    sub_field_dict["subfields"] = []
+                    for field_L3 in field_L2['subfields_L3']:
+                        if field_L3 not in sub_field_dict["subfields"]:  # to not have 2 x subfields
+                            sub_field_dict["subfields"].append(field_L3)  # when one node included by two fields
+                    root_field_dict["subfields"].append(sub_field_dict)
+                    fields_used.append(field_L2['name_L2'])
+
+            for field_L2_name in rootField['subfields']:  # for levels 2 which don't have a level 3
+                if field_L2_name not in fields_used:
+                    sub_field_dict = {}
+                    sub_field_dict["name"] = field_L2_name
+                    sub_field_dict["subfields"] = []
+                    root_field_dict["subfields"].append(sub_field_dict)
+
+            all_fields.append(root_field_dict)
+
+        # sorts alphabetically
+        for x in all_fields:
+            sorted_list_of_dict = sorted(x["subfields"], key=lambda k: k['name'])  # sort a list of dictionaries by the
+            # key: name (level 2)
+            x["subfields"] = sorted_list_of_dict
+            '''for y in x["subfields"]:
+                sortedList = sorted(y["subfields"])  #sort simply a list of strings (level 3)
+                y["subfields"] = sortedList'''
+
+        return all_fields
+
+    @staticmethod
+    def find_classifications_names():
+        names = graph.run('''MATCH (c:Classification)
+                             RETURN c.name AS name
+                             ORDER BY c.name''').data()
+        return names
 
     @staticmethod
     def delete_all():

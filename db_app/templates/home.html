@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <title>Home</title>
+</head>
+<body>
+    <h1 class="title">Home</h1>
+    <br />
+
+    {% for classification in classifications_names %}
+        <div class="list-group">
+            <a href="/classification/{{classification['name']}}" class="list-group-item list-group-item-action center-3">{{classification['name']}}</a>
+        </div>
+    {% endfor %}
+</body>
+</html>

@@ -23,6 +23,25 @@ def index(bw):
     return render_template('index.html', allFields=all_fields, buzzWords=buzzwords, buzzWordFields=buzzword_fields,
                            word=bw)
 
+@app.route('/home')
+def display_classifications():
+    classifications_names = Database.find_classifications_names()
+    return render_template('home.html', classifications_names=classifications_names)
+
+@app.route('/classification/<name>/', defaults={'bw': 'Cloud computing'})
+@app.route('/classification/<name>/<bw>')
+def display_classification(name, bw):
+    classification = Database.find_classification(name)
+
+    buzzwords = Database.find_buzz_words()[0]['names']
+
+    if bw is not None:
+        buzzword_fields = Database.find_buzz_word_fields(bw)
+    else:
+        buzzword_fields = None
+
+    return render_template('classification.html', classification=classification, buzzWords=buzzwords, buzzWordFields=buzzword_fields,
+                           word=bw, name=name)
 
 @app.route('/questions/<field_name>/')
 def display_questions(field_name):
