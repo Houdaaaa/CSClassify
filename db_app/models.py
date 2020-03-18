@@ -1,7 +1,7 @@
 from py2neo import Graph, Node, Relationship, NodeMatcher
 import json
 from flask import Flask
-from flask_pymongo import PyMongo
+from flask_pymongo import PyMongo, ObjectId
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -64,6 +64,17 @@ class User:
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
+    @login.user_loader  # Flask-login also requires you to define a “user_loader” function which, given a user ID, returns the associated user object.
+    def load_user(username):  # ou avec id
+        u = mongo.db.Users.find_one({"username": username})  # find_one_or_404 ?
+        if not u:
+            return None
+        user_obj = User(username=u['username'])
+        user_obj.set_var(lastname=u['lastname'], firstname=u['firstname'], email=u['email'], job=u['job'],
+                         website_url=u['website_url'], graphs_id=u['graphs_id'])
+        user_obj.set_password(password=u['password'])
+        return user_obj
+
     def get_username(self):
         return self.username
 
@@ -100,19 +111,22 @@ class User:
     def set_website_url(self, website_url):
         self.website_url = website_url
 
-    def set_var(self, lastname, firstname, email, job, website_url):
+    def get_graphs_id(self):
+        return self.graphs_id
+
+    def set_graphs_id(self,id_list):  #uuid list of strings
+        self.graphs_id = id_list
+
+    def add_graphs_id(self,id):
+        self.graphs_id.append(id)
+
+    def set_var(self, lastname, firstname, email, job, website_url, graphs_id):
         self.set_lastname(lastname)
         self.set_firstname(firstname)
         self.set_email(email)
         self.set_job(job)
         self.set_website_url(website_url)
-
-    @login.user_loader   #vérifier ce que fait load_user
-    def load_user(username): #ou avec id
-        u = mongo.db.Users.find_one({"username": username})   #find_one_or_404 ?
-        if not u:
-            return None
-        return User(username=u['username'])
+        self.set_graphs_id(graphs_id)
 
     def convert_to_doc(self):
         doc = {
@@ -338,6 +352,38 @@ class Database:
         return nodes_list
 
     @staticmethod
+    def find_root_fields():
+        fields = graph.run('''MATCH (f:Field{level:1})
+                              WITH f
+                              ORDER BY f.name
+                              RETURN f.name AS name, f.uuid AS uuid''').data()
+        print(fields)
+        return fields
+
+    @staticmethod
+    def find_uuid_classification(name):
+        uuid = graph.run('''MATCH (c:Classification{name:{name}})
+                                     RETURN c.uuid AS uuid''', name=name).data()
+        return uuid[0]['uuid']
+
+    @staticmethod
+    def find_fields(root_id):
+        fields = graph.run('''MATCH (f:Field{level:1, uuid:{root_id}})-[:include*0..2]->(f2:Field)
+                                  WITH f2
+                                  ORDER BY f2.name
+                                  RETURN f2.name AS name, f2.uuid AS uuid''', root_id=root_id).data()
+
+        return fields
+
+    @staticmethod
+    def find_all_fieldsss():
+        fields = graph.run('''MATCH (f:Field)
+                              WITH f
+                              ORDER BY f.name
+                              RETURN f.name AS name, f.uuid AS uuid''').data()
+        return fields
+
+    @staticmethod
     def find_buzz_words():
 
         """finds all buzz words
@@ -420,6 +466,11 @@ class Database:
         field_node = Database.find_one_field(field_name)
         graph.delete(field_node)
 
+        #req = '''MATCH (f:Field{uuid:{uuid}})
+        #                        DETACH DELETE f'''
+
+        #graph.run(req, uuid=uuid_field)
+
     @staticmethod
     def delete_buzz_word(buzzword):
 
@@ -470,6 +521,22 @@ class Database:
         field_node['level'] = new_level
 
         graph.push(field_node)
+
+        #req = '''MATCH (f:Field{uuid:{uuid}})
+        #                 SET f.name = {name}'''
+        #graph.run(req, uuid=uuid_field, name=name)
+
+    @staticmethod
+    def edit_field_request(uuid_field, name):
+
+        request = "MATCH (f:Field{uuid:"+ uuid_field + "}) SET f.name=" + name
+        return request
+
+    @staticmethod
+    def delete_field_request(uuid_field):
+
+        request = "MATCH (f:Field{uuid:" + uuid_field + "}) DETACH DELETE f"
+        return request
 
     @staticmethod
     def edit_question(title, new_title, new_url):
@@ -644,10 +711,17 @@ class Database:
         return all_fields
 
     @staticmethod
-    def find_classifications_names():
+    def find_all_classifications_names():
         names = graph.run('''MATCH (c:Classification)
                              RETURN c.name AS name
                              ORDER BY c.name''').data()
+        return names
+
+    @staticmethod
+    def find_classifications_names(graphs_id): #id_graphs = list of ints
+        names = graph.run('''MATCH (c:Classification) WHERE c.uuid IN {graphs_id}
+                             RETURN c.name AS name
+                             ORDER BY c.name''', graphs_id=graphs_id).data()
         return names
 
     @staticmethod

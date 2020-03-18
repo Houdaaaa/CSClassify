@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from models import *  #pour mongo
 
@@ -33,3 +33,28 @@ class RegistrationForm(FlaskForm):
         user = mongo.db.Users.find_one({"email": email.data})
         if user is not None:
             raise ValidationError('Please use a different email address.')
+
+
+
+
+class EditFieldForm(FlaskForm):
+    #level = SelectField('Field level', choices=[(1,1), (2,2), (3,3)])
+    root = SelectField('Root', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    fields = SelectField('Fields', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    new_field = StringField('New field')
+    edit = SubmitField('Edit')
+    delete = SubmitField('Delete')
+
+    def validate_root(self, root):
+        print(root.data)
+        #si = ---select option -- : choose an option please
+
+    def validate_fields(self, fields):
+        print('ok')
+
+    def validate_edit(self, edit):
+        def validate_new_field(self, new_field):
+            print('oknnnn')
+        print(self.new_field)
+        if self.new_field.data == '' :
+            raise ValidationError('Please complete the niew field field ')

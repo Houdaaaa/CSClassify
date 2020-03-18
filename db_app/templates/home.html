@@ -7,9 +7,10 @@
     <title>Home</title>
 </head>
 <body>
-    <h1 class="title">Home</h1>
+    <h1 class="title">{{title}}</h1>
+    <a href="/add/classification/" class="btn btn-secondary float-right">Add</a>
     <br />
-
+    <br />
     {% for classification in classifications_names %}
         <div class="list-group">
             <a href="/classification/{{classification['name']}}" class="list-group-item list-group-item-action center-3">{{classification['name']}}</a>
