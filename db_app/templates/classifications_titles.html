@@ -8,7 +8,9 @@
 </head>
 <body>
     <h1 class="title">{{title}}</h1>
-    <a href="/add/classification/" class="btn btn-secondary float-right">Add</a>
+    {% if is_user_connected is defined %}
+        <a href="/add/classification/" class="btn btn-secondary float-right">Add classification</a>
+    {% endif %}
     <br />
     <br />
     {% for classification in classifications_names %}

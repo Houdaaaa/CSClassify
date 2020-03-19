@@ -2,13 +2,15 @@ from datetime import datetime
 from werkzeug.urls import url_parse
 from werkzeug.utils import redirect
 from models import *
-from flask import Flask, render_template, url_for, request, flash, jsonify
+from flask import render_template, url_for, request, jsonify
 from forms import LoginForm, RegistrationForm, EditFieldForm
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
+from wtforms.validators import DataRequired
 
 
 # Database.database_creation()
 
+#Spécial Editx + buzz words
+#Aller chercher le graph spécifique à Editx pour ça ?
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
 def index(bw):
@@ -25,27 +27,23 @@ def index(bw):
                            word=bw)
 
 
-@app.route('/home', defaults={'user': ''})
-@app.route('/<user>/home')
-def home(user):
-    classifications_names = Database.find_all_classifications_names()
-    return render_template('home.html', classifications_names=classifications_names, title='Home')
+@app.route('/all_classifications', defaults={'user': ''})
+@app.route('/<user>/all_classifications')
+def all_classifications(user):
+    classifications_names = Database.find_all_classifications_names()  #uuid + name?
+
+    return render_template('classifications_titles.html', classifications_names=classifications_names, title='all classifications')
 
 
-# @app.route('/<user>/classifications')
-@app.route('/<user>/classifications')  # classification's user only (member'space)
+@app.route('/<user>/my_classifications')  # classification's user only (member'space)
 @login_required
-def display_classifications_user(user):
+def my_classifications(user):
     graphs_id = current_user.get_graphs_id()
     classifications_names = Database.find_classifications_names(graphs_id)
-    return render_template('home.html', classifications_names=classifications_names,
-                           title='My classifications')  # même html ok? mais 'home' pas très expressif
+    is_user_connected = True
 
-
-@app.route('/add/classification/')
-@login_required
-def add_classification():
-    return 'ok'
+    return render_template('classifications_titles.html', classifications_names=classifications_names,
+                           title='My classifications', is_user_connected=is_user_connected)
 
 
 @app.route('/classification/<name>/', defaults={'bw': 'Cloud computing'})
@@ -62,9 +60,26 @@ def display_classification(name, bw):  # id au lieu de name?
     else:
         buzzword_fields = None
 
+    #pas obligé d'être logué : si forker --> redigige vers la page suivante et si page suivante login_required
+    # --> login d'abord
+    is_user_classification = False
+    if current_user.is_authenticated:  #page utilisé pour all user et quand je me co (via my_classif)
+        user_classifications = current_user.get_graphs_id()
+        if uuid_classification in user_classifications:
+            is_user_classification = True
+
+    #If bouton forké submit :
+    #   ajouter graph à la db
+        #rediriger vers '/<user>/my_classifications' (login required)
+
+    #If bouton traduire submit:
+        # on fork ou pas?
+        # redirect ou? à reflechir
+
     return render_template('classification.html', classification=classification, buzzWords=buzzwords,
                            buzzWordFields=buzzword_fields,
-                           word=bw, name=name, uuid_classification=uuid_classification)
+                           word=bw, name=name, uuid_classification=uuid_classification,
+                           is_user_classification=is_user_classification)
 
 
 @app.route('/questions/<field_name>/')
@@ -108,7 +123,7 @@ def edit_field(classification_uuid):
         mongo.db.Classification.update_one({'_id': ObjectId(uuid_temporaire)},
                                            {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
                                            upsert=False)
-        return redirect(url_for('home'))  # redirect to la même page? pour autre modification
+        return redirect(url_for('all_classifications'))  # redirect to la même page? pour autre modification
 
     if form.edit.data:
         form.new_field.validators = [DataRequired()]
@@ -121,7 +136,7 @@ def edit_field(classification_uuid):
                                                {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
                                                upsert=False)
             # upsert parameter will insert instead of updating if the post is not found in the database.
-            return redirect(url_for('home'))  # bonne page?
+            return redirect(url_for('all_classifications'))  # bonne page?
 
     return render_template('edit_classification.html', form=form)
 
@@ -134,6 +149,12 @@ def get_fields(id_root):
         return jsonify([])
     else:
         return jsonify(fields)
+
+
+@app.route('/add/classification/')
+@login_required
+def add_classification():
+    return 'ok'
 
 
 @app.route('/login', methods=['GET', 'POST'])
