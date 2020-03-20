@@ -40,6 +40,7 @@ class User:
         self.job = ''
         self.website_url = ''
         self.graphs_id = []
+        self.id = ''
 
 
     @staticmethod
@@ -64,6 +65,12 @@ class User:
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
+    def get_id_2(self):
+        return self.id
+
+    def set_id_2(self, id):
+        self.id = id
+
     @login.user_loader  # Flask-login also requires you to define a “user_loader” function which, given a user ID, returns the associated user object.
     def load_user(username):  # ou avec id
         u = mongo.db.Users.find_one({"username": username})  # find_one_or_404 ?
@@ -71,7 +78,7 @@ class User:
             return None
         user_obj = User(username=u['username'])
         user_obj.set_var(lastname=u['lastname'], firstname=u['firstname'], email=u['email'], job=u['job'],
-                         website_url=u['website_url'], graphs_id=u['graphs_id'])
+                         website_url=u['website_url'], graphs_id=u['graphs_id'], id=u['_id'])
         user_obj.set_password(password=u['password'])
         return user_obj
 
@@ -120,13 +127,14 @@ class User:
     def add_graphs_id(self,id):
         self.graphs_id.append(id)
 
-    def set_var(self, lastname, firstname, email, job, website_url, graphs_id):
+    def set_var(self, lastname, firstname, email, job, website_url, graphs_id, id):
         self.set_lastname(lastname)
         self.set_firstname(firstname)
         self.set_email(email)
         self.set_job(job)
         self.set_website_url(website_url)
         self.set_graphs_id(graphs_id)
+        self.set_id_2(id)
 
     def convert_to_doc(self):
         doc = {
@@ -144,8 +152,49 @@ class User:
 
     #Ajouter comme méthodes : Login_Valide(email, password), Json, Register(username, email, password), save_to_mongo
 
+class MongoDB:
+
+    user_collection = mongo.db.Users
+    classification_collection = mongo.db.Classification
+
+    @staticmethod
+    def add_classification(classification):
+        req = mongo.db.Classification.insert_one(classification)
+        uuid = str(req.inserted_id)
+        Database.add_classification_2(uuid)
+
+        return uuid
+
+    @staticmethod
+    def find_all_classifications_names():
+        req = mongo.db.Classification.find({}, {'name': 1, '_id': 0})  #order by c.name    print(req[0]['name'])
+        names = req.sort('name')
+        return req
+
+    @staticmethod
+    def find_classifications_names(user_id):  # id_graphs = list of ints -- doit etre objectId
+        """
+        :param user_id: int
+        :return:
+        """
+        req = mongo.db.Classification.find({'user_id': user_id}, {'_id': 0, 'name': 1}) #censé être un ObjectID
+        names = req.sort('name')
+        #req = mongo.db.Classification.find({'_id': {"$in": graphs_id}}, {'name': 1, '_id': 0})si plusieurs graphs/users
+
+        return names
+
+    @staticmethod
+    def find_classification_info(name):
+        infos = mongo.db.Classification.find_one({'name': name}, {'_id': 1, 'user_id':1})
+        return infos
+
 
 class Database:
+
+    @staticmethod
+    def add_classification_2(uuid):
+        classification_node = Node('Classification', uuid=uuid)  #id_user et name??? est-ce que la redondance vaut la peine ?
+        graph.create(classification_node)
 
     @staticmethod
     def add_field(field, level):
@@ -359,12 +408,6 @@ class Database:
                               RETURN f.name AS name, f.uuid AS uuid''').data()
         print(fields)
         return fields
-
-    @staticmethod
-    def find_uuid_classification(name):
-        uuid = graph.run('''MATCH (c:Classification{name:{name}})
-                                     RETURN c.uuid AS uuid''', name=name).data()
-        return uuid[0]['uuid']
 
     @staticmethod
     def find_fields(root_id):
@@ -657,7 +700,7 @@ class Database:
         return all_fields
 
     @staticmethod
-    def find_classification(name): #Ou ID?
+    def find_classification_bêta(name): #Ou ID?
         levels_1_2 = graph.run('''MATCH (c:Classification{name:{name}})-[:include]->(f:Field{level:1})
                                   -[:include]->(f2:Field) 
                                   WITH f, f2
@@ -711,18 +754,58 @@ class Database:
         return all_fields
 
     @staticmethod
-    def find_all_classifications_names():
-        names = graph.run('''MATCH (c:Classification)
-                             RETURN c.name AS name
-                             ORDER BY c.name''').data()
-        return names
+    def find_classification(uuid):  # Ou ID?
+        levels_1_2 = graph.run('''MATCH (c:Classification{uuid:{uuid}})-[:include]->(f:Field{level:1})
+                                      -[:include]->(f2:Field) 
+                                      WITH f, f2
+                                      ORDER BY f2.name
+                                      RETURN f.name AS name, collect(f2.name) AS subfields
+                                      ORDER BY f.name''', uuid=uuid).data()
 
-    @staticmethod
-    def find_classifications_names(graphs_id): #id_graphs = list of ints
-        names = graph.run('''MATCH (c:Classification) WHERE c.uuid IN {graphs_id}
-                             RETURN c.name AS name
-                             ORDER BY c.name''', graphs_id=graphs_id).data()
-        return names
+        levels_2_3 = graph.run('''MATCH (c:Classification{uuid:{uuid}})-[:include]->(f:Field{level:1})-[:include]->
+                                      (f2:Field)-[:include]->(f3:Field)
+                                      WITH f2, f3
+                                      ORDER BY f3.name
+                                      RETURN f2.name AS name_L2, collect(f3.name) AS subfields_L3
+                                      ORDER BY f2.name''', uuid=uuid).data()
+
+        all_fields = []
+        for rootField in levels_1_2:
+            root_field_dict = {}
+            root_field_dict["name"] = rootField['name']
+            root_field_dict["subfields"] = []
+            fields_used = []
+
+            for field_L2 in levels_2_3:
+                if field_L2["name_L2"] in rootField['subfields']:  # rootField['subfields'] is an str list
+                    sub_field_dict = {}
+                    sub_field_dict["name"] = field_L2['name_L2']
+                    sub_field_dict["subfields"] = []
+                    for field_L3 in field_L2['subfields_L3']:
+                        if field_L3 not in sub_field_dict["subfields"]:  # to not have 2 x subfields
+                            sub_field_dict["subfields"].append(field_L3)  # when one node included by two fields
+                    root_field_dict["subfields"].append(sub_field_dict)
+                    fields_used.append(field_L2['name_L2'])
+
+            for field_L2_name in rootField['subfields']:  # for levels 2 which don't have a level 3
+                if field_L2_name not in fields_used:
+                    sub_field_dict = {}
+                    sub_field_dict["name"] = field_L2_name
+                    sub_field_dict["subfields"] = []
+                    root_field_dict["subfields"].append(sub_field_dict)
+
+            all_fields.append(root_field_dict)
+
+        # sorts alphabetically
+        for x in all_fields:
+            sorted_list_of_dict = sorted(x["subfields"], key=lambda k: k['name'])  # sort a list of dictionaries by the
+            # key: name (level 2)
+            x["subfields"] = sorted_list_of_dict
+            '''for y in x["subfields"]:
+                sortedList = sorted(y["subfields"])  #sort simply a list of strings (level 3)
+                y["subfields"] = sortedList'''
+
+        return all_fields
 
     @staticmethod
     def delete_all():

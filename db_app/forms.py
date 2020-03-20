@@ -34,8 +34,11 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
+class AddClassificationForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    presentation = StringField('Presentation text', validators=[DataRequired()])
 
-
+    submit = SubmitField('Submit')
 
 class EditFieldForm(FlaskForm):
     #level = SelectField('Field level', choices=[(1,1), (2,2), (3,3)])

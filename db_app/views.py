@@ -3,9 +3,8 @@ from werkzeug.urls import url_parse
 from werkzeug.utils import redirect
 from models import *
 from flask import render_template, url_for, request, jsonify
-from forms import LoginForm, RegistrationForm, EditFieldForm
+from forms import LoginForm, RegistrationForm, EditFieldForm, AddClassificationForm
 from wtforms.validators import DataRequired
-
 
 # Database.database_creation()
 
@@ -30,7 +29,8 @@ def index(bw):
 @app.route('/all_classifications', defaults={'user': ''})
 @app.route('/<user>/all_classifications')
 def all_classifications(user):
-    classifications_names = Database.find_all_classifications_names()  #uuid + name?
+    classifications_names = MongoDB.find_all_classifications_names()  #uuid + name?
+    print(classifications_names)
 
     return render_template('classifications_titles.html', classifications_names=classifications_names, title='all classifications')
 
@@ -38,8 +38,8 @@ def all_classifications(user):
 @app.route('/<user>/my_classifications')  # classification's user only (member'space)
 @login_required
 def my_classifications(user):
-    graphs_id = current_user.get_graphs_id()
-    classifications_names = Database.find_classifications_names(graphs_id)
+    user_id = current_user.get_id_2()    # graphs_id = current_user.get_graphs_id()
+    classifications_names = MongoDB.find_classifications_names(user_id)
     is_user_connected = True
 
     return render_template('classifications_titles.html', classifications_names=classifications_names,
@@ -49,9 +49,9 @@ def my_classifications(user):
 @app.route('/classification/<name>/', defaults={'bw': 'Cloud computing'})
 @app.route('/classification/<name>/<bw>')
 def display_classification(name, bw):  # id au lieu de name?
-    classification = Database.find_classification(name)
-
-    uuid_classification = Database.find_uuid_classification(name)
+    infos = MongoDB.find_classification_info(name)
+    uuid_classification = str(infos['_id']) #on a qd mm besoin de uuid pour graphs
+    classification = Database.find_classification(uuid_classification)
 
     buzzwords = Database.find_buzz_words()[0]['names']
 
@@ -64,13 +64,13 @@ def display_classification(name, bw):  # id au lieu de name?
     # --> login d'abord
     is_user_classification = False
     if current_user.is_authenticated:  #page utilisé pour all user et quand je me co (via my_classif)
-        user_classifications = current_user.get_graphs_id()
-        if uuid_classification in user_classifications:
+        user_id = infos['user_id']
+        if user_id == current_user.get_id_2():
             is_user_classification = True
 
-    #If bouton forké submit :
-    #   ajouter graph à la db
-        #rediriger vers '/<user>/my_classifications' (login required)
+        #user_classifications = current_user.get_graphs_id()
+        #if uuid_classification in user_classifications:
+         #   is_user_classification = True
 
     #If bouton traduire submit:
         # on fork ou pas?
@@ -102,6 +102,25 @@ def display_questions(field_name):
     return render_template('questions.html', field=field_name, questionsList=questions_list, subfields=subfields,
                            concernedFields=concerned_fields)
 
+
+@app.route('/fork/<uuid_ancestor>/', methods=['GET', 'POST'])
+@login_required
+def fork(uuid_ancestor):
+    form = AddClassificationForm()
+
+    if form.validate_on_submit():       # lien avec add_classification !
+        classification = {
+            'name': form.name.data,
+            'is_forked': True,
+            'details': form.presentation.data,
+            'user_id': current_user.get_id_2(),  # regler pb solution
+            'logs': []
+        }
+
+        uuid_classification = MongoDB.add_classification(classification)
+        Database.add_fork_relationship(uuid_classification, uuid_ancestor)
+        return redirect(url_for('my_classifications', user=current_user.get_username()))
+    return render_template('add_classification.html', title='Add classification', form=form)
 
 @app.route('/edit_field/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
@@ -165,10 +184,12 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():  # Si GET return False
         user = mongo.db.Users.find_one_or_404({"username": form.username.data})
+        print(user['_id'])
         if user and User.check_password(user['password'], form.password.data):
             user_obj = User(username=user['username'])
             user_obj.set_var(lastname=user['lastname'], firstname=user['firstname'], email=user['email'],
-                             job=user['job'], website_url=user['website_url'], graphs_id=user['graphs_id'])
+                             job=user['job'], website_url=user['website_url'], graphs_id=user['graphs_id'], id=user['_id'])
+            # redondance avec load_user?? juste username et c ok normalement
             login_user(user_obj, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if not next_page or url_parse(next_page).netloc != '':
