@@ -3,7 +3,7 @@ from werkzeug.urls import url_parse
 from werkzeug.utils import redirect
 from models import *
 from flask import render_template, url_for, request, jsonify
-from forms import LoginForm, RegistrationForm, EditFieldForm, AddClassificationForm
+from forms import LoginForm, RegistrationForm, EditFieldForm, AddClassificationForm, AddFieldForm
 from wtforms.validators import DataRequired
 
 # Database.database_creation()
@@ -52,6 +52,7 @@ def display_classification(name, bw):  # id au lieu de name?
     infos = MongoDB.find_classification_info(name)
     uuid_classification = str(infos['_id']) #on a qd mm besoin de uuid pour graphs
     classification = Database.find_classification(uuid_classification)
+    #verifier if classification == [] (veut dire pas de uuid synchro entre mongoDB et NEo4J, ou classif vide)
 
     buzzwords = Database.find_buzz_words()[0]['names']
 
@@ -122,15 +123,51 @@ def fork(uuid_ancestor):
         return redirect(url_for('my_classifications', user=current_user.get_username()))
     return render_template('add_classification.html', title='Add classification', form=form)
 
+@app.route('/add_field/<classification_uuid>', methods=['GET', 'POST'])
+@login_required
+def add_field(classification_uuid):
+    form = AddFieldForm()
+
+    root_fields = Database.find_root_fields()
+    level2_fields = Database.find_same_level_fields(2)
+
+    form.root_field_attached.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
+    form.level2_field.choices += [(field['uuid'], field['name']) for field in level2_fields] # a afficher + executer que qd nécessaire
+
+    if form.submit.data:  #for verification
+        if form.level.data == '2':
+            form.root_field_attached.validators = [DataRequired()]
+        if form.level.data == '3':
+            form.root_field_attached.validators = [DataRequired()]
+            form.level2_field.validators = [DataRequired()]
+        if form.validate_on_submit():
+            name = form.name.data
+            level = form.level.data
+            req = ""
+            if form.level.data == '2':
+                uuid_root = form.root_field_attached.data
+                req = Database.add_field_request(name, level, 'include', uuid_root)
+
+            if form.level.data == '3':
+                uuid_level2_field = form.level2_field.data
+                req = Database.add_field_request(name, level, 'include', uuid_level2_field)
+
+            mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
+                                               {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
+                                               upsert=False)
+
+            return redirect(url_for('my_classifications', user=current_user.get_username()))
+
+    return render_template('add_field.html', form=form)
+
+
 @app.route('/edit_field/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
 def edit_field(classification_uuid):
-    # Si forker --> ajouter rel forked from avant
-    uuid_temporaire = "5e6635494d2cd76913ff1850"  # A CHANGER AVEC SUYNCHRO DATA ENTRE MONGODB ET NEO4J
     form = EditFieldForm()
 
     # print(form.errors)
-    root_fields = Database.find_root_fields()
+    root_fields = Database.find_root_fields()    #IL FAUT RECONSTRUIRE LA DB ICI
     all_fields = Database.find_all_fieldsss()
     form.root.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
     form.fields.choices += [(field['uuid'], field['name']) for field in all_fields]
@@ -139,7 +176,7 @@ def edit_field(classification_uuid):
         uuid_field = form.fields.data
         req = Database.delete_field_request(uuid_field)
         timestamp = datetime.utcnow()
-        mongo.db.Classification.update_one({'_id': ObjectId(uuid_temporaire)},
+        mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                            {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
                                            upsert=False)
         return redirect(url_for('all_classifications'))  # redirect to la même page? pour autre modification
@@ -151,7 +188,7 @@ def edit_field(classification_uuid):
             new_name = form.new_field.data
             req = Database.edit_field_request(uuid_field, new_name)
             timestamp = datetime.utcnow()
-            mongo.db.Classification.update_one({'_id': ObjectId(uuid_temporaire)},
+            mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                                {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
                                                upsert=False)
             # upsert parameter will insert instead of updating if the post is not found in the database.

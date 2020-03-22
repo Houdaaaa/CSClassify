@@ -188,8 +188,28 @@ class MongoDB:
         infos = mongo.db.Classification.find_one({'name': name}, {'_id': 1, 'user_id':1})
         return infos
 
+    @staticmethod
+    def get_logs(uuid_classification):
+        uuid = ObjectId(uuid_classification)
+        logs = mongo.db.Classification.find_one({'_id': uuid}, {'_id': 0, 'logs': 1})
+        ##Verif if logs == None (soit id pas bon ou pas de logs)
+
+        for query in logs['logs']:  #query = dict
+            Graph.run(query['request'])
+        print(logs)
+        #ajouter MATCH c:Classification{uuid:uuid}-rel>f:Field, WITH f + req (dans autre fonction)
+
+        #reprendre l'ancestre, y appliquer les request et afficher la base de données ainsi
+        return logs
+
 
 class Database:
+
+    @staticmethod
+    def classification_reconstruction(uuid_classification):
+        return 'ok'
+
+
 
     @staticmethod
     def add_classification_2(uuid):
@@ -411,10 +431,10 @@ class Database:
 
     @staticmethod
     def find_fields(root_id):
-        fields = graph.run('''MATCH (f:Field{level:1, uuid:{root_id}})-[:include*0..2]->(f2:Field)
-                                  WITH f2
-                                  ORDER BY f2.name
-                                  RETURN f2.name AS name, f2.uuid AS uuid''', root_id=root_id).data()
+        fields = graph.run('''MATCH (f:Field{level:1, uuid:{root_id}})-[:include*1..2]->(f2:Field)
+                              WITH f2
+                              ORDER BY f2.name
+                              RETURN f2.name AS name, f2.uuid AS uuid''', root_id=root_id).data()
 
         return fields
 
@@ -573,6 +593,25 @@ class Database:
     def edit_field_request(uuid_field, name):
 
         request = "MATCH (f:Field{uuid:"+ uuid_field + "}) SET f.name=" + name
+        return request
+
+    @staticmethod
+    def add_field_request(name, level, relation, origin_field):
+
+        request = "MATCH (f1:Field{uuid:" + origin_field + "}) " \
+                  "WITH f1 " \
+                  "CREATE (f2:Field{name:" + name + ", level:" + level + "})" \
+                  "CREATE (f1)-[r:" + relation + "]->(f2)"
+        # attention propriété name et uuid en string
+
+        return request
+
+    @staticmethod
+    def add_relation_request(relation, origin_field, end_field):
+
+        request = "MATCH (f1:Field{uuid:" + origin_field + "}), (f2:Field{uuid:" + end_field + "}) " \
+                  "CREATE (f1)-[r:" + relation + "]->(f2)"
+        print(request)
         return request
 
     @staticmethod

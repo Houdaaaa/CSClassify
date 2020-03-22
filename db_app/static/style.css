@@ -1,3 +1,21 @@
+select[id=level2_field]
+{
+    display: none;
+}
+select[id=root_field_attached]
+{
+    display: none;
+}
+label[for=root_field_attached]
+{
+    display: none;
+}
+label[for=level2_field]
+{
+    display: none;
+}
+
+
 
 .center-1{
 	margin-left:40px;

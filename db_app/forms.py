@@ -40,6 +40,15 @@ class AddClassificationForm(FlaskForm):
 
     submit = SubmitField('Submit')
 
+class AddFieldForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    level = SelectField('Level', choices=[("", "-- select an option --"), ('1', '1'), ('2', '2'), ('3', '3')], validators=[DataRequired()])
+    root_field_attached = SelectField('Associated root field',
+                                choices=[("", "-- select an option --")]) # enlever DataRequired
+    level2_field = SelectField('Associated level 2 field',
+                               choices=[("", "-- select an option --")])  # enlever DataRequired
+    submit = SubmitField('Submit')
+
 class EditFieldForm(FlaskForm):
     #level = SelectField('Field level', choices=[(1,1), (2,2), (3,3)])
     root = SelectField('Root', choices=[("", "-- select an option --")], validators=[DataRequired()])
