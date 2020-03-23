@@ -3,11 +3,11 @@ from werkzeug.urls import url_parse
 from werkzeug.utils import redirect
 from models import *
 from flask import render_template, url_for, request, jsonify
-from forms import LoginForm, RegistrationForm, EditFieldForm, AddClassificationForm, AddFieldForm
+from forms import *
 from wtforms.validators import DataRequired
 
 # Database.database_creation()
-
+Database.find_rel("cac98850-60af-11ea-b055-defb489c9703", "cb7f1cb0-60af-11ea-b055-defb489c9703")
 #Spécial Editx + buzz words
 #Aller chercher le graph spécifique à Editx pour ça ?
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
@@ -161,6 +161,44 @@ def add_field(classification_uuid):
     return render_template('add_field.html', form=form)
 
 
+@app.route('/edit_relation/<classification_uuid>', methods=['GET', 'POST'])
+@login_required
+def edit_relation(classification_uuid):
+    form = EditRelForm()
+
+    root_fields = Database.find_root_fields()
+    all_fields = Database.find_all_fieldsss()
+    form.root_field1.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
+    form.field1.choices += [(field['uuid'], field['name']) for field in all_fields]
+    form.root_field2.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
+    form.field2.choices += [(field['uuid'], field['name']) for field in all_fields]
+
+    if form.delete.data:
+        if form.validate_on_submit(): #validation in form.py est suffisante?
+            uuid_field1 = form.field1.data
+            uuid_field2 = form.field2.data
+            rel = form.actual_rel.data
+            req = Database.delete_relation_request(uuid_field1, uuid_field2, rel)
+            mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
+                                               {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
+                                               upsert=False)
+            return redirect(url_for('my_classifications', user=current_user.get_username()))
+    if form.edit.data:
+        form.type_rel.validators = [DataRequired()]
+        if form.validate_on_submit():
+            uuid_field1 = form.field1.data
+            uuid_field2 = form.field2.data
+            new_rel = form.type_rel.data
+
+            req = Database.edit_rel_request(uuid_field1, uuid_field2, form.actual_rel.data, new_rel)
+            mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
+                                               {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
+                                               upsert=False)
+            # upsert parameter will insert instead of updating if the post is not found in the database.
+            return redirect(url_for('my_classifications', user=current_user.get_username()))  # bonne page?
+
+    return render_template('edit_relation.html', form=form)
+
 @app.route('/edit_field/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
 def edit_field(classification_uuid):
@@ -173,13 +211,14 @@ def edit_field(classification_uuid):
     form.fields.choices += [(field['uuid'], field['name']) for field in all_fields]
 
     if form.delete.data:
-        uuid_field = form.fields.data
-        req = Database.delete_field_request(uuid_field)
-        timestamp = datetime.utcnow()
-        mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
-                                           {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
-                                           upsert=False)
-        return redirect(url_for('all_classifications'))  # redirect to la même page? pour autre modification
+        if form.validate_on_submit():
+            uuid_field = form.fields.data
+            req = Database.delete_field_request(uuid_field)
+            timestamp = datetime.utcnow()
+            mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
+                                               {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
+                                               upsert=False)
+            return redirect(url_for('all_classifications'))  # redirect to la même page? pour autre modification
 
     if form.edit.data:
         form.new_field.validators = [DataRequired()]
@@ -200,11 +239,20 @@ def edit_field(classification_uuid):
 @app.route('/get_fields/<id_root>')
 def get_fields(id_root):
     fields = Database.find_fields(id_root)
-    print(fields)
     if not fields:  # si le dico est vide
         return jsonify([])
     else:
         return jsonify(fields)
+
+
+@app.route('/get_rel/<id_field1>/<id_field2>')
+def get_rel(id_field1, id_field2):
+    rel = Database.find_rel(id_field1, id_field2)
+    print(rel)
+    if not rel:  # si le dico est vide
+        return jsonify([])
+    else:
+        return jsonify(rel) #rel est juste un mot, transforme en liste or not?
 
 
 @app.route('/add/classification/')

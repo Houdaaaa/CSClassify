@@ -49,6 +49,25 @@ class AddFieldForm(FlaskForm):
                                choices=[("", "-- select an option --")])  # enlever DataRequired
     submit = SubmitField('Submit')
 
+
+class EditRelForm(FlaskForm):
+    root_field1 = SelectField('Root field 1', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    root_field2 = SelectField('Root field 2', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    field1 = SelectField('Field 1', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    field2 = SelectField('Field 2', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    type_rel = SelectField('Edit in ',
+                           choices=[("", "-- select an option --"), ('include', 'include'), ('concerns', 'concerns')])
+    actual_rel = StringField('Actual relation', render_kw={'readonly': True})
+
+    edit = SubmitField('Edit')
+    delete = SubmitField('Delete')
+
+    def validate_actual_rel(self, actual_rel):
+        if actual_rel.data == '':
+            raise ValidationError('There is no relationship between the two fields. '
+                                  ' Please select two fields that are related to each other. ')
+
+
 class EditFieldForm(FlaskForm):
     #level = SelectField('Field level', choices=[(1,1), (2,2), (3,3)])
     root = SelectField('Root', choices=[("", "-- select an option --")], validators=[DataRequired()])

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <form action="" method="post" >
+        {{ form.hidden_tag() }}
+
+        <p>
+            {{ form.root_field1.label }}:
+            {{ form.root_field1 }}<br>
+            {% for error in form.root_field1.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.field1.label }}:
+            {{ form.field1 }}<br>
+            {% for error in form.field1.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.root_field2.label }}:
+            {{ form.root_field2 }}<br>
+            {% for error in form.root_field2.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.field2.label }}:
+            {{ form.field2 }}<br>
+            {% for error in form.field2.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.actual_rel.label }}:
+            {{ form.actual_rel }}<br>
+            {% for error in form.actual_rel.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.type_rel.label }}:
+            {{ form.type_rel }}<br>
+            {% for error in form.type_rel.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+
+        <p>{{ form.edit() }}</p>
+        <p>{{ form.delete() }}</p>
+
+    </form>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='edit_rel.js')}}"></script>
+</body>
+</html>

@@ -435,8 +435,13 @@ class Database:
                               WITH f2
                               ORDER BY f2.name
                               RETURN f2.name AS name, f2.uuid AS uuid''', root_id=root_id).data()
-
         return fields
+
+    @staticmethod
+    def find_rel(field1, field2):
+        rel = graph.run('''MATCH (f1:Field{uuid:{field1}})-[r]->(f2:Field{uuid:{field2}})
+                               RETURN type(r) AS type''', field1=field1, field2=field2).data()
+        return rel   # rel[0]['type']
 
     @staticmethod
     def find_all_fieldsss():
@@ -604,6 +609,39 @@ class Database:
                   "CREATE (f1)-[r:" + relation + "]->(f2)"
         # attention propriété name et uuid en string
 
+        return request
+
+    @staticmethod
+    def edit_rel_request(uuid_field1, uuid_field2, old_relation, new_relation):
+        """
+        :param uuid_field1: origin field
+        :param uuid_field2: end field
+        :param old_relation:
+        :param new_relation:
+        :return:
+        """
+
+        request = "MATCH (f1:Field{uuid:" + uuid_field1 + "})-[r:"+ old_relation +"]->(f2:Field{uuid:" + uuid_field2 + "}) " \
+                  "WITH r, f1, f2 " \
+                  "DELETE r " \
+                  "CREATE (f1)-[r:" + new_relation + "]->(f2)"
+        # attention propriété name et uuid en string
+
+        return request
+
+    @staticmethod
+    def delete_relation_request(uuid_field1, uuid_field2, relation_name):
+
+        """Request that deletes the relationship between 2 fields
+
+            :param field1: the name of one of the two fields
+            :param field2: the name of the other field
+            :param relation_name: the relationship between the two fields"""
+
+        # Be carreful to check the existence of the nodes
+
+        request = "MATCH (f1:Field{uuid:" + uuid_field1 + "})-[r:" + relation_name + "]->(f2:Field{uuid:" + uuid_field2 + "}) " \
+                  "DELETE r "
         return request
 
     @staticmethod
