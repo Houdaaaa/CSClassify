@@ -430,6 +430,12 @@ class Database:
         return fields
 
     @staticmethod
+    def find_level(field_uuid):
+        level = graph.run('''MATCH (f:Field{uuid:{field_uuid}})
+                              RETURN f.level AS level''', field_uuid=field_uuid).data()
+        return level[0]['level']
+
+    @staticmethod
     def find_fields(root_id):
         fields = graph.run('''MATCH (f:Field{level:1, uuid:{root_id}})-[:include*1..2]->(f2:Field)
                               WITH f2
@@ -624,6 +630,22 @@ class Database:
         request = "MATCH (f1:Field{uuid:" + uuid_field1 + "})-[r:"+ old_relation +"]->(f2:Field{uuid:" + uuid_field2 + "}) " \
                   "WITH r, f1, f2 " \
                   "DELETE r " \
+                  "CREATE (f1)-[r:" + new_relation + "]->(f2)"
+        # attention propriété name et uuid en string
+
+        return request
+
+    @staticmethod
+    def add_rel_request(uuid_field1, uuid_field2, new_relation):
+        """
+        :param uuid_field1: origin field
+        :param uuid_field2: end field
+        :param old_relation:
+        :param new_relation:
+        :return:
+        """
+
+        request = "MATCH (f1:Field{uuid:" + uuid_field1 + "}),(f2:Field{uuid:" + uuid_field2 + "}) " \
                   "CREATE (f1)-[r:" + new_relation + "]->(f2)"
         # attention propriété name et uuid en string
 

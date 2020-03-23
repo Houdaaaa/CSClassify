@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
-from models import *  #pour mongo
+from models import *  # pour mongo et Database
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -49,6 +49,31 @@ class AddFieldForm(FlaskForm):
                                choices=[("", "-- select an option --")])  # enlever DataRequired
     submit = SubmitField('Submit')
 
+
+class AddRelForm(FlaskForm):
+    root_field1 = SelectField('Root field 1', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    root_field2 = SelectField('Root field 2', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    field1 = SelectField('Field 1', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    field2 = SelectField('Field 2', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    type_rel = SelectField('Relation to add',
+                           choices=[("", "-- select an option --"), ('include', 'include'), ('concerns', 'concerns'),],
+                           validators=[DataRequired()])
+    actual_rel = StringField('Actual relation', render_kw={'readonly': True})
+
+    submit = SubmitField('Add')
+
+    def validate_actual_rel(self, actual_rel):
+        if (actual_rel.data != '') and (actual_rel.data == self.type_rel.data):
+            raise ValidationError('The relation already exist ')
+
+    def validate_type_rel(self, type_rel):
+        uuid_field1 = self.field1.data
+        uuid_field2 = self.field2.data
+        level_field1 = Database.find_level(uuid_field1)
+        level_field2 = Database.find_level(uuid_field2)
+        if type_rel.data == 'include':
+            if level_field1 > level_field2:    # un level1 peut-il include un level3 ?
+                raise ValidationError('The relation can exist only if field1 level < field2 level ')
 
 class EditRelForm(FlaskForm):
     root_field1 = SelectField('Root field 1', choices=[("", "-- select an option --")], validators=[DataRequired()])

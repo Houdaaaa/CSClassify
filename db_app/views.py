@@ -7,7 +7,7 @@ from forms import *
 from wtforms.validators import DataRequired
 
 # Database.database_creation()
-Database.find_rel("cac98850-60af-11ea-b055-defb489c9703", "cb7f1cb0-60af-11ea-b055-defb489c9703")
+
 #Spécial Editx + buzz words
 #Aller chercher le graph spécifique à Editx pour ça ?
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
@@ -159,6 +159,34 @@ def add_field(classification_uuid):
             return redirect(url_for('my_classifications', user=current_user.get_username()))
 
     return render_template('add_field.html', form=form)
+
+
+@app.route('/add_relation/<classification_uuid>', methods=['GET', 'POST'])
+@login_required
+def add_relation(classification_uuid):
+    form = AddRelForm()
+
+    root_fields = Database.find_root_fields()
+    all_fields = Database.find_all_fieldsss()
+    form.root_field1.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
+    form.field1.choices += [(field['uuid'], field['name']) for field in all_fields]
+    form.root_field2.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
+    form.field2.choices += [(field['uuid'], field['name']) for field in all_fields]
+
+    if form.submit.data:
+        if form.validate_on_submit():
+            uuid_field1 = form.field1.data
+            uuid_field2 = form.field2.data
+            rel = form.type_rel.data
+
+            req = Database.add_rel_request(uuid_field1, uuid_field2, rel)
+            mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
+                                               {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
+                                               upsert=False)
+            # upsert parameter will insert instead of updating if the post is not found in the database.
+            return redirect(url_for('my_classifications', user=current_user.get_username()))  # bonne page?
+
+    return render_template('add_relation.html', form=form)
 
 
 @app.route('/edit_relation/<classification_uuid>', methods=['GET', 'POST'])
