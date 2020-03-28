@@ -1,3 +1,7 @@
+ul li label
+{
+    display: none;
+}
 select[id=level2_field]
 {
     display: none;

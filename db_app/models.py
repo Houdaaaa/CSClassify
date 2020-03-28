@@ -209,8 +209,6 @@ class Database:
     def classification_reconstruction(uuid_classification):
         return 'ok'
 
-
-
     @staticmethod
     def add_classification_2(uuid):
         classification_node = Node('Classification', uuid=uuid)  #id_user et name??? est-ce que la redondance vaut la peine ?
@@ -226,6 +224,42 @@ class Database:
 
         field_node = Node('Field', name=field, level=level)
         graph.create(field_node)
+
+    @staticmethod
+    def add_root_field(field, uuid_classification):   # level forcément à 1
+
+        """adds a field to the database
+
+            :param field: the name of the field
+            :param level: the relationship level of the field"""
+
+        graph.run('''MATCH (c:Classification{uuid:{uuid}})
+                     CREATE (f:Field{name:{name}, level:1})<-[:include]-(c)''', uuid=uuid_classification, name=field).data()
+
+    @staticmethod
+    def add_subgraph(root_name, fields, uuid_classification):  # au lieu de root_name root_uuid, préciser la classification?
+
+        """
+
+        :param root_name:
+        :param fields:
+        :return:
+        """
+
+        field_l2= fields['level2']
+        fields_l3 = fields['level3']
+
+        graph.run('''MATCH (f1:Field{name:{root_name}})<-[:include]-(c:Classification{uuid:{uuid}})
+                     CREATE (f2:Field{name:{field_l2}, level:2})<-[:include]-(f1)''',
+                  uuid=uuid_classification,
+                  root_name=root_name,
+                  field_l2=field_l2).data()
+
+        for f in fields_l3:
+            graph.run('''MATCH (f2:Field{name:{field_l2}, level:2})
+                         CREATE (f3:Field{name:{f}, level:3})<-[:include]-(f2)''', field_l2=field_l2,
+                      f=f).data()
+
 
     @staticmethod
     def add_translated_field(field):
@@ -915,7 +949,7 @@ class Database:
                      DETACH DELETE n ''')
 
     @staticmethod
-    def fields_creation():
+    def fields_creation():#ajouter champ classification
 
         """Creates the classification into the database"""
 
@@ -1013,3 +1047,19 @@ class Database:
 
         db.Classification.insert_one(classification)  # Collection : Classification
         db.Users.insert_one(users)  # Collection : Users
+
+
+'''
+$("#addNewField2").click(function() {
+        //var newInput = $("<input required type='text' value=''></input></br>")
+          //  .attr("id", "newInput")
+            //.attr("name", "newInput")
+        //var newInput = $("<textarea></textarea></br>")
+        var newInput = $("<input required type='text' value=''></input></br>")
+        .attr("class", "form-control")
+        .attr("id", fieldNum)
+        .attr("name", "flist-" + fieldNum)
+        $("#fflist").append(newInput);
+        fieldNum++;
+    });
+'''

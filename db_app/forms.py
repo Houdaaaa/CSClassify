@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, FieldList
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from models import *  # pour mongo et Database
 
@@ -114,3 +114,13 @@ class EditFieldForm(FlaskForm):
         print(self.new_field)
         if self.new_field.data == '' :
             raise ValidationError('Please complete the niew field field ')
+
+
+class AddSubGraphForm(FlaskForm):
+    name_root = StringField('Name of the root field', validators=[DataRequired()]) # forcément level = 1
+    name_l2 = StringField('Name of the level 2 field')
+    flist = FieldList(StringField())
+
+    add_root = SubmitField('valid root')
+    add_field = SubmitField('add another field level 2')  # level 2
+    submit = SubmitField('Finish')

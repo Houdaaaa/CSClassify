@@ -4,6 +4,7 @@ from werkzeug.utils import redirect
 from models import *
 from flask import render_template, url_for, request, jsonify
 from forms import *
+from wtforms import FieldList, StringField
 from wtforms.validators import DataRequired
 
 # Database.database_creation()
@@ -104,6 +105,7 @@ def display_questions(field_name):
                            concernedFields=concerned_fields)
 
 
+@app.route('/add/classification/', defaults={'uuid_ancestor': None}, methods=['GET', 'POST'])
 @app.route('/fork/<uuid_ancestor>/', methods=['GET', 'POST'])
 @login_required
 def fork(uuid_ancestor):
@@ -119,9 +121,42 @@ def fork(uuid_ancestor):
         }
 
         uuid_classification = MongoDB.add_classification(classification)
-        Database.add_fork_relationship(uuid_classification, uuid_ancestor)
+        if uuid_ancestor is not None:
+            Database.add_fork_relationship(uuid_classification, uuid_ancestor)
         return redirect(url_for('my_classifications', user=current_user.get_username()))
     return render_template('add_classification.html', title='Add classification', form=form)
+
+@app.route('/add_subgraph/<uuid_classification>/<new_root>/', methods=['GET', 'POST'])
+@app.route('/add_subgraph/<uuid_classification>/', defaults={'new_root': None}, methods=['GET', 'POST'])
+@login_required
+def add_subgraph(uuid_classification, new_root):
+    form = AddSubGraphForm()
+
+    if form.add_root.data:
+        #verif que juste stringfield ok !
+        new_root = form.name_root.data
+        Database.add_root_field(new_root, uuid_classification) #la vraie request car ne part de rien
+        return redirect(url_for('add_subgraph', uuid_classification=uuid_classification, new_root=new_root))
+
+    if form.add_field.data:
+        form.name_l2.validators = [DataRequired()]
+        if form.validate_on_submit():
+            fields = {}
+            field_l2 = form.name_l2.data
+            fields_l3 = form.flist.data
+            fields['level2'] = field_l2
+            fields['level3'] = fields_l3
+            Database.add_subgraph(new_root, fields, uuid_classification)
+
+            #  clear the form
+            form.name_l2.data = ''
+            form.flist.entries.clear()
+            return render_template('add_subgraph.html', new_root=new_root, form=form)
+
+    if form.submit.data:
+        return redirect(url_for('my_classifications', user=current_user.get_username()))
+
+    return render_template('add_subgraph.html', form=form, new_root=new_root)
 
 @app.route('/add_field/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
@@ -281,12 +316,6 @@ def get_rel(id_field1, id_field2):
         return jsonify([])
     else:
         return jsonify(rel) #rel est juste un mot, transforme en liste or not?
-
-
-@app.route('/add/classification/')
-@login_required
-def add_classification():
-    return 'ok'
 
 
 @app.route('/login', methods=['GET', 'POST'])

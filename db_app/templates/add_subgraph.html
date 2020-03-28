@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add subgraph</title>
+</head>
+<body>
+    <form action="" method="post" >
+        {{ form.hidden_tag() }}
+
+        {% if new_root == None %}
+            <p>
+                {{ form.name_root.label }}<br>
+                {{ form.name_root(size=32) }}<br>
+                {% for error in form.name_root.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>{{ form.add_root }}</p>
+        {% endif %}
+
+        {% if new_root != None %}
+            <center><h2>{{new_root}}</h2></center>
+
+            <p>
+                {{ form.name_l2.label }}<br>
+                {{ form.name_l2(size=32) }}  <button type="button" id="addsubfield" >Add subfield </button> <br>
+                {% for error in form.name_l2.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+
+            <p>{{ form.flist }}</p>
+            <p>{{ form.add_field() }}</p>
+            <p>{{ form.submit() }}</p>
+        {% endif %}
+
+    </form>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='add_subgraph.js')}}"></script>
+</body>
+</html>
