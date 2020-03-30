@@ -158,6 +158,44 @@ def add_subgraph(uuid_classification, new_root):
 
     return render_template('add_subgraph.html', form=form, new_root=new_root)
 
+
+@app.route('/add_translation/<uuid_classification>/<language>/', methods=['GET', 'POST'])
+@app.route('/add_translation/<uuid_classification>/', defaults={'language': None}, methods=['GET', 'POST'])
+@login_required
+def add_translation(uuid_classification, language):
+    form = AddTranslationForm()
+    classification_name = MongoDB.find_classification_name(uuid_classification) #Verifier que classification existe
+
+    root_fields = Database.find_root_fields()  # préciser la classification non?
+    form.root_field.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
+
+    if form.valid.data:
+        language = form.language.data
+        return redirect(url_for('add_translation', uuid_classification=uuid_classification, language=language))
+
+    if form.valid2.data:
+        uuid_root_selected = form.root_field.data # renvoyer à html uuid ou autre chose ?
+        root_selected = Database.find_name(uuid_root_selected) #id : username ou uuid????????
+        field_l2 = Database.find_subfields_2(uuid_root_selected) #return dico
+
+        return render_template('add_translation.html', form=form, field_l2=field_l2, language=language,
+                               classification_name=classification_name, root_selected=root_selected)
+
+    if form.valid3.data: #comme valid  normal
+        print(request.form.items())
+        for key, val in request.form.items():
+            if key.startswith("f-"):
+                name_field = (key.partition('-')[2]).strip()     #  Change name into uuid or not ?
+                Database.add_translation(name_field, val, language)   #  Préciser quelle classification ?
+        return redirect(url_for('add_translation', uuid_classification=uuid_classification, language=language))
+
+    if form.finish.data:
+        return redirect(url_for('my_classifications', user=current_user.get_username()))
+
+    return render_template('add_translation.html', form=form, classification_name=classification_name,
+                           language=language)
+
+
 @app.route('/add_field/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
 def add_field(classification_uuid):

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Translation</title>
+</head>
+<body>
+    <form action="" method="post" >
+        {{ form.hidden_tag() }}
+
+        {% if language == None %}
+            <p>
+                {{ form.language.label }}<br>
+                {{ form.language }}<br>
+                {% for error in form.language.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p> Classification name : {{classification_name}}</p>
+
+            <p>{{ form.valid }}</p>
+        {% endif %}
+
+        {% if language != None and field_l2 is not defined %}
+            <center><h2> classification translation </h2></center>
+            <h3>Language: <strong>{{language}}</strong></h3>
+            <h3>Classification : {{classification_name}} </h3>
+
+            <p>
+                {{ form.root_field.label }}<br>
+                {{ form.root_field }}  {{ form.valid2 }}
+                {% for error in form.root_field.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+        {% endif %}
+
+        <div id="cool" name="cool">
+            {% if field_l2 is defined %}
+                <center><h2> classification translation </h2></center>
+                <h3>Language: <strong>{{language}}</strong></h3>
+                <h3>Classification : {{classification_name}} </h3>
+                <h3>Root field : {{root_selected}} </h3>
+                <p>
+                {{ form.root_translation.label }}<br>
+                {{ form.root_translation }}
+                {% for error in form.root_translation.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+                {% for field in field_l2 %}
+                    <li>{{field['name']}}</li> <input type="text" id="{{field['name']}}" name="f-{{ field['name']}} " required>
+                    {% for field_l3 in field['subfields'] %}
+                        <ul>
+                            <li>{{field_l3}}</li> <input type="text" id="{{field_l3}}" name="fields-{{ field['name'] }}" required> <!-- possible d'y ajouter uuid  et required-->
+                        </ul>
+                    {% endfor %}
+                {% endfor %}
+
+                </br> </br>
+                {{ form.valid3 }}
+                {{ form.finish }}
+                <input type="text" id="field['level2']" name="coucou" required>
+            {% endif %}
+        </div>
+
+
+    </form>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='add_subgraph.js')}}"></script>
+</body>
+</html>

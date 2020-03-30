@@ -124,3 +124,14 @@ class AddSubGraphForm(FlaskForm):
     add_root = SubmitField('valid root')
     add_field = SubmitField('add another field level 2')  # level 2
     submit = SubmitField('Finish')
+
+
+class AddTranslationForm(FlaskForm):
+    language = SelectField('Language', choices=[('FR', 'French'), ('EN', 'English'), ('SP', 'Spain'), ('NL', 'Dutch')], validators=[DataRequired()])
+    root_field = SelectField('Choose the root field that you want to translate', choices=[("", "-- select an option --")], validators=[DataRequired()])
+    root_translation = StringField('Root traduction', validators=[DataRequired()])
+
+    valid = SubmitField('Validate')
+    valid2 = SubmitField('Validate')
+    valid3 = SubmitField('Save and translate a new subgraph')
+    finish = SubmitField('Finish')

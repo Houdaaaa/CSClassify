@@ -202,6 +202,13 @@ class MongoDB:
         #reprendre l'ancestre, y appliquer les request et afficher la base de données ainsi
         return logs
 
+    @staticmethod
+    def find_classification_name(uuid_classification):
+        info = mongo.db.Classification.find_one({'_id': ObjectId(uuid_classification)}, {'_id': 0, 'name': 1})
+        #Verifier que classification existe
+        print(info)
+        return info['name']
+
 
 class Database:
 
@@ -260,18 +267,6 @@ class Database:
                          CREATE (f3:Field{name:{f}, level:3})<-[:include]-(f2)''', field_l2=field_l2,
                       f=f).data()
 
-
-    @staticmethod
-    def add_translated_field(field):
-
-        """adds a field to the database
-
-            :param field: the name of the field
-            :param level: the relationship level of the field"""
-
-        field_node = Node('Field', name=field)
-        graph.create(field_node)
-
     @staticmethod
     def add_question(title, url):
 
@@ -317,13 +312,14 @@ class Database:
             graph.merge(Relationship(f1, 'include', f2))
 
     @staticmethod
-    def add_translation_relationship(field, translated_field, language):
+    def add_translation(field, translated_field, language):
 
         """ """
-        graph.run('''MATCH (f1:Field {name:{field}})
-                     MATCH (f2:Field {name:{translated_field}})
-                     CREATE UNIQUE (f1)-[:translate_into{language:{language}}]->(f2)''',
+        req = graph.run('''MATCH (f1:Field {name:{field}})
+                          CREATE (f1)-[:translate_into{language:{language}}]->(f2:Field {name:{translated_field}})''',
                   field=field, translated_field=translated_field, language=language)
+        print(req)
+        return req
 
         # f1 = matcher.match("Field", name=field).first()
         # f2 = matcher.match("Field", name=translated_field).first()
@@ -476,6 +472,12 @@ class Database:
                               ORDER BY f2.name
                               RETURN f2.name AS name, f2.uuid AS uuid''', root_id=root_id).data()
         return fields
+
+    @staticmethod
+    def find_name(uuid_field):
+        field = graph.run('''MATCH (f:Field{uuid:{uuid_field}})
+                             RETURN f.name AS name''', uuid_field=uuid_field).data()
+        return field[0]['name']
 
     @staticmethod
     def find_rel(field1, field2):
@@ -758,6 +760,23 @@ class Database:
                               ORDER BY f3.name
                               RETURN f2.name AS name, collect(f3.name) AS subfields, f2.uuid AS uuid
                               ORDER BY f2.name''', name=field_name).data()  # empty list if level 3
+
+        return fields
+
+    @staticmethod
+    def find_subfields_2(field_uuid):
+
+        """finds all subfields of a field
+
+            :param field_name: the name of the field
+            :returns: a list of dictionaries that represent all subfields of the field"""
+
+        fields = graph.run('''MATCH (f:Field{uuid:{field_uuid}})-[:include]->(f2:Field) 
+                                  OPTIONAL MATCH (f)-[:include]->(f2)-[:include]->(f3:Field)
+                                  WITH f2, f3
+                                  ORDER BY f3.name
+                                  RETURN f2.name AS name, collect(f3.name) AS subfields, f2.uuid AS uuid
+                                  ORDER BY f2.name''', field_uuid=field_uuid).data()  # empty list if level 3
 
         return fields
 
