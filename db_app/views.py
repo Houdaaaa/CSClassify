@@ -8,7 +8,8 @@ from wtforms import FieldList, StringField
 from wtforms.validators import DataRequired
 
 # Database.database_creation()
-
+#print(Database.cloning_check("5e6635494d2cd76913ff1850"))
+Database.delete_classification("738e611a-9acf-11ea-a3c0-defb489c9703")
 #Spécial Editx + buzz words
 #Aller chercher le graph spécifique à Editx pour ça ?
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
@@ -70,9 +71,6 @@ def display_classification(name, bw):  # id au lieu de name?
         if user_id == current_user.get_id_2():
             is_user_classification = True
 
-        #user_classifications = current_user.get_graphs_id()
-        #if uuid_classification in user_classifications:
-         #   is_user_classification = True
 
     #If bouton traduire submit:
         # on fork ou pas?
@@ -104,6 +102,13 @@ def display_questions(field_name):
     return render_template('questions.html', field=field_name, questionsList=questions_list, subfields=subfields,
                            concernedFields=concerned_fields)
 
+@app.route('/delete/<uuid_classification>/', methods=['GET', 'POST'])
+@login_required
+def delete_classification(uuid_classification):
+    if uuid_classification is not None:
+        MongoDB.delete_classification(uuid_classification)
+    return redirect(url_for('my_classifications', user=current_user.get_username()))
+    #return render_template('add_classification.html')
 
 @app.route('/add/classification/', defaults={'uuid_ancestor': None}, methods=['GET', 'POST'])
 @app.route('/fork/<uuid_ancestor>/', methods=['GET', 'POST'])
@@ -123,13 +128,19 @@ def fork(uuid_ancestor):
         uuid_classification = MongoDB.add_classification(classification)
         if uuid_ancestor is not None:
             Database.add_fork_relationship(uuid_classification, uuid_ancestor)
+
         return redirect(url_for('my_classifications', user=current_user.get_username()))
-    return render_template('add_classification.html', title='Add classification', form=form)
+    return render_template('add_classification.html', title='Fork classification', form=form)
 
 @app.route('/add_subgraph/<uuid_classification>/<new_root>/', methods=['GET', 'POST'])
 @app.route('/add_subgraph/<uuid_classification>/', defaults={'new_root': None}, methods=['GET', 'POST'])
 @login_required
 def add_subgraph(uuid_classification, new_root):
+    # clone a classification if necessary
+    print('ok')
+    print(uuid_classification)
+    Database.cloning_check(uuid_classification)
+
     form = AddSubGraphForm()
 
     if form.add_root.data:
@@ -163,6 +174,9 @@ def add_subgraph(uuid_classification, new_root):
 @app.route('/add_translation/<uuid_classification>/', defaults={'language': None}, methods=['GET', 'POST'])
 @login_required
 def add_translation(uuid_classification, language):
+    # clone a classification if necessary
+    Database.cloning_check(uuid_classification)
+
     form = AddTranslationForm()
     classification_name = MongoDB.find_classification_name(uuid_classification) #Verifier que classification existe
 
@@ -199,6 +213,9 @@ def add_translation(uuid_classification, language):
 @app.route('/add_field/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
 def add_field(classification_uuid):
+    # clone a classification if necessary
+    Database.cloning_check(classification_uuid)
+
     form = AddFieldForm()
 
     root_fields = Database.find_root_fields()
@@ -237,6 +254,9 @@ def add_field(classification_uuid):
 @app.route('/add_relation/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
 def add_relation(classification_uuid):
+    # clone a classification if necessary
+    Database.cloning_check(classification_uuid)
+
     form = AddRelForm()
 
     root_fields = Database.find_root_fields()
@@ -265,6 +285,9 @@ def add_relation(classification_uuid):
 @app.route('/edit_relation/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
 def edit_relation(classification_uuid):
+    # clone a classification if necessary
+    Database.cloning_check(classification_uuid)
+
     form = EditRelForm()
 
     root_fields = Database.find_root_fields()
@@ -303,6 +326,9 @@ def edit_relation(classification_uuid):
 @app.route('/edit_field/<classification_uuid>', methods=['GET', 'POST'])
 @login_required
 def edit_field(classification_uuid):
+    # clone a classification if necessary
+    Database.cloning_check(classification_uuid)
+
     form = EditFieldForm()
 
     # print(form.errors)

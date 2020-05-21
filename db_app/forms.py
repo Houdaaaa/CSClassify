@@ -2,6 +2,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, FieldList
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from models import *  # pour mongo et Database
+from wtforms.widgets import TextArea
+
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -36,7 +38,7 @@ class RegistrationForm(FlaskForm):
 
 class AddClassificationForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
-    presentation = StringField('Presentation text', validators=[DataRequired()])
+    presentation = StringField('Presentation text', validators=[DataRequired()], widget=TextArea())
 
     submit = SubmitField('Submit')
 

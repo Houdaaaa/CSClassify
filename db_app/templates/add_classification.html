@@ -5,6 +5,7 @@
     <title>{{title}}</title>
 </head>
 <body>
+    <h1>{{title}}</h1>
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
 
@@ -17,7 +18,7 @@
         </p>
         <p>
             {{ form.presentation.label }}<br>
-            {{ form.presentation(size=255) }}<br>
+            {{ form.presentation(cols="70", rows="10") }}<br>
             {% for error in form.presentation.errors %}
             <span style="color: red;">[{{ error }}]</span>
             {% endfor %}

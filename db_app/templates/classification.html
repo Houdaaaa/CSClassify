@@ -40,65 +40,24 @@
         </div>
     </div>
 
-
-    <div class="center-2" style="background:#6a6868">
-        <div class="col-md-3 col-lg-3"  >
-            <div class="form-group ">
-              <label class="subtitle" for="inputState">Buzz Words</label>
-              <select id="inputState" class="form-control" onchange="location = this.value;">
-                {%for buzzword in buzzWords  %}
-                  {% if buzzword == word %}
-                    <option value="/classification/{{name}}/{{buzzword}}" selected>{{buzzword}}</option>
-                  {% endif %}
-                  {% if buzzword != word %}
-                    <option value="/classification/{{name}}/{{buzzword}}" >{{buzzword}}</option>
-                  {% endif %}
-                {% endfor %}
-              </select>
-            </div>
-        </div>
-
-        <div class="container-fluid" >
-            <div class="row center">
-                {% if buzzWordFields != None %}
-                    {% for field in buzzWordFields %}
-                      <div class="col-md-3 col-lg-3">
-                          <ul>
-                            <li>
-                              <a href="/questions/{{field['name']}}/">{{field['name']}}</a>
-                                {% if field['subfields']|length %}
-                                    <ul>
-                                      <li>
-                                          <a href="/questions/{{field['subfields']['name']}}/">{{field['subfields']['name']}}</a>
-                                        {% for subsubfield in field['subfields']['subfields'] %}
-                                          <ul>
-                                            <li>
-                                              <a href="/questions/{{subsubfield}}/">{{subsubfield}}</a>
-                                            </li>
-                                          </ul>
-                                        {% endfor %}
-                                      </li>
-                                    </ul>
-                                {% endif %}
-                            </li>
-                          </ul>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-        </div>
+    <div class="container-fluid" >
+        <a href="/fork/{{uuid_classification}}/" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Fork</a>
+        <a href="/add_translation/{{uuid_classification}}/" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Translate</a>
     </div>
-
-    <a href="/fork/{{uuid_classification}}/" class="btn btn-info" role="button">Fork</a>
-    <a href="/add_translation/{{uuid_classification}}/" class="btn btn-info" role="button">Translate</a>
     <br> <br>
 
     {% if is_user_classification %}
-        <a href="/edit_field/{{uuid_classification}}" class="btn btn-info" role="button">Edit/delete field</a>
-        <a href="/edit_relation/{{uuid_classification}}" class="btn btn-info" role="button">Edit/delete relation</a>
-        <a href="/add_field/{{uuid_classification}}" class="btn btn-info" role="button">Add field</a>
-        <a href="/add_relation/{{uuid_classification}}" class="btn btn-info" role="button">Add relation</a>
-        <a href="/add_subgraph/{{uuid_classification}}" class="btn btn-info" role="button">Add subgraph</a>
+        <div class="container-fluid" >
+            <a href="/edit_field/{{uuid_classification}}" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Edit/delete field</a>
+            <a href="/edit_relation/{{uuid_classification}}" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Edit/delete relation</a>
+            <a href="/add_field/{{uuid_classification}}" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Add field</a>
+            <a href="/add_relation/{{uuid_classification}}" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Add relation</a>
+            <a href="/add_subgraph/{{uuid_classification}}" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Add subgraph</a>
+        </div>
+        <br/><br/>
+        <div>
+            <a href="/delete/{{uuid_classification}}" class="btn btn-info" role="button" style="float: right; background-color: #555555;">Delete classification</a>
+        </div>
     {% endif %}
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>

@@ -5,6 +5,7 @@
     <title>Add subgraph</title>
 </head>
 <body>
+    <h1>Add subgraph</h1>
     <form action="" method="post" >
         {{ form.hidden_tag() }}
 
@@ -20,7 +21,7 @@
         {% endif %}
 
         {% if new_root != None %}
-            <center><h2>{{new_root}}</h2></center>
+            <h2>{{new_root}}</h2>
 
             <p>
                 {{ form.name_l2.label }}<br>
