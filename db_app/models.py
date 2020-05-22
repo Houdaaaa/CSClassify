@@ -249,7 +249,7 @@ class Database:
                         RETURN c2.uuid AS uuid''',
                                              uuid_classification=uuid_classification).data()  # list of multiples dico [{'uuid': None},]
 
-        if classification_to_clone[0]['uuid'] != None:  # one classification is possible
+        if classification_to_clone[0]['uuid'] != None:  # one classification is possible --> ancestor
             Database.clone_subgraph(classification_to_clone[0]['uuid'], uuid_classification)
 
         if classification_to_clone2 != None:  # multiples classifications are possibles
@@ -260,7 +260,7 @@ class Database:
                             WHERE EXISTS(c.is_cloned)
                             MATCH (c)-[:forked_from]->(c2:Classification)
                             RETURN c.is_cloned, c2.uuid AS uuid
-                            ''', uuid_classification=classification['uuid'])
+                            ''', uuid_classification=classification['uuid']).data()
                 if not req:  # if list is empty so if is_cloned variable doesn't exists
                     Database.clone_subgraph(uuid_classification, classification['uuid'])
                     #  Dans le cas où c lui qui a été cloné
