@@ -40,7 +40,7 @@
                 <center><h2> classification translation </h2></center>
                 <h3>Language: <strong>{{language}}</strong></h3>
                 <h3>Classification : {{classification_name}} </h3>
-                <h3>Root field : {{root_selected}} </h3>
+                <h3>Root field : {{root_selected_name}} </h3>
                 <p>
                 {{ form.root_translation.label }}<br>
                 {{ form.root_translation }}
@@ -49,10 +49,10 @@
                 {% endfor %}
             </p>
                 {% for field in field_l2 %}
-                    <li>{{field['name']}}</li> <input type="text" id="{{field['name']}}" name="f-{{ field['name']}} " required>
+                    <li>{{field['name']}}</li> <input type="text" id="{{field['name']}}" name="f-{{ field['name']}} " >
                     {% for field_l3 in field['subfields'] %}
                         <ul>
-                            <li>{{field_l3}}</li> <input type="text" id="{{field_l3}}" name="fields-{{ field['name'] }}" required> <!-- possible d'y ajouter uuid  et required-->
+                            <li>{{field_l3}}</li> <input type="text" id="{{field_l3}}" name="f-{{field_l3}}" > <!-- possible d'y ajouter uuid  et required-->
                         </ul>
                     {% endfor %}
                 {% endfor %}

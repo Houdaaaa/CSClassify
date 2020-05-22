@@ -264,9 +264,6 @@ class Database:
                 if not req:  # if list is empty so if is_cloned variable doesn't exists
                     Database.clone_subgraph(uuid_classification, classification['uuid'])
                     #  Dans le cas où c lui qui a été cloné
-
-        print(classification_to_clone)
-        print(classification_to_clone2)
         return 0
 
     @staticmethod
@@ -314,11 +311,6 @@ class Database:
                      DETACH DELETE n
                      DETACH DELETE c
                      RETURN 1''', uuid_classification=uuid_classification)
-
-        #question_node = matcher.match("Classification", uuid=uuid_classification).first()
-        #graph.delete(question_node)
-
-
 
     @staticmethod
     def add_field(field, level):
@@ -413,21 +405,13 @@ class Database:
             graph.merge(Relationship(f1, 'include', f2))
 
     @staticmethod
-    def add_translation(field, translated_field, language):
+    def add_translation(field, translated_field, language, uuid_classification):
 
         """ """
-        req = graph.run('''MATCH (f1:Field {name:{field}})
-                          CREATE (f1)-[:translate_into{language:{language}}]->(f2:Field {name:{translated_field}})''',
-                        field=field, translated_field=translated_field, language=language)
-        print(req)
+        req = graph.run('''MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f1:Field {name:{field}})
+                           CREATE (f1)-[:translate_into{language:{language}}]->(f2:Field {name:{translated_field}})''',
+                        field=field, translated_field=translated_field, language=language, uuid_classification=uuid_classification)
         return req
-
-        # f1 = matcher.match("Field", name=field).first()
-        # f2 = matcher.match("Field", name=translated_field).first()
-        # graph.merge(Relationship(f1, 'translate_into', f2))
-        # rel = graph.match(start_node=f1, rel_type="translate_into", end_node=f2)
-        # rel.properties["language"] = language
-        # rel.push()
 
     @staticmethod
     def add_fork_relationship(classification_uuid, ancestor_uuid):  # Attention ici on travaille avec les id
@@ -538,26 +522,27 @@ class Database:
         return node_list
 
     @staticmethod
-    def find_same_level_fields(level):
+    def find_same_level_fields(level, uuid_classification):
 
         """finds all fields that have the same level in the classification
 
             :param level: the desired level
             :returns: a list of all fields that have the desired level"""
 
-        fields_nodes = matcher.match("Field", level=level)
-        nodes_list = []
-        for field in fields_nodes:
-            nodes_list.append(field)
-        return nodes_list
+        fields = graph.run('''MATCH ((c:Classification{uuid:{uuid_classification}})-[:include*]->(f:Field{level:{level}}))
+                                      WITH f
+                                      ORDER BY f.name
+                                      RETURN f.name AS name, f.uuid AS uuid''',
+                           uuid_classification=uuid_classification, level=level).data()
+
+        return fields
 
     @staticmethod
-    def find_root_fields():
-        fields = graph.run('''MATCH (f:Field{level:1})
+    def find_root_fields(uuid_classification):
+        fields = graph.run('''MATCH ((c:Classification{uuid:{uuid_classification}})-[:include]->(f:Field{level:1}))
                               WITH f
                               ORDER BY f.name
-                              RETURN f.name AS name, f.uuid AS uuid''').data()
-        print(fields)
+                              RETURN f.name AS name, f.uuid AS uuid''', uuid_classification=uuid_classification).data()
         return fields
 
     @staticmethod
@@ -878,19 +863,19 @@ class Database:
         return fields
 
     @staticmethod
-    def find_subfields_2(field_uuid):
+    def find_subfields_2(field_uuid, uuid_classification):
 
         """finds all subfields of a field
 
             :param field_name: the name of the field
             :returns: a list of dictionaries that represent all subfields of the field"""
 
-        fields = graph.run('''MATCH (f:Field{uuid:{field_uuid}})-[:include]->(f2:Field) 
+        fields = graph.run('''MATCH (c:Classification{uuid:{uuid_classification}})-[:include*]->(f:Field{uuid:{field_uuid}})-[:include]->(f2:Field) 
                                   OPTIONAL MATCH (f)-[:include]->(f2)-[:include]->(f3:Field)
                                   WITH f2, f3
                                   ORDER BY f3.name
                                   RETURN f2.name AS name, collect(f3.name) AS subfields, f2.uuid AS uuid
-                                  ORDER BY f2.name''', field_uuid=field_uuid).data()  # empty list if level 3
+                                  ORDER BY f2.name''', field_uuid=field_uuid, uuid_classification=uuid_classification).data()  # empty list if level 3
 
         return fields
 

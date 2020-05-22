@@ -5,7 +5,7 @@ from models import *
 from flask import render_template, url_for, request, jsonify
 from forms import *
 from wtforms import FieldList, StringField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Optional
 
 # Database.database_creation()
 #print(Database.cloning_check("5e6635494d2cd76913ff1850"))
@@ -137,50 +137,48 @@ def fork(uuid_ancestor):
 @login_required
 def add_subgraph(uuid_classification, new_root):
     # clone a classification if necessary
-    print('ok')
-    print(uuid_classification)
     Database.cloning_check(uuid_classification)
 
     form = AddSubGraphForm()
 
     if form.add_root.data:
-        #verif que juste stringfield ok !
+        # verify que juste stringfield ok !
         new_root = form.name_root.data
-        Database.add_root_field(new_root, uuid_classification) #la vraie request car ne part de rien
+        Database.add_root_field(new_root, uuid_classification)  # la vraie request car ne part de rien
         return redirect(url_for('add_subgraph', uuid_classification=uuid_classification, new_root=new_root))
 
     if form.add_field.data:
         form.name_l2.validators = [DataRequired()]
-        if form.validate_on_submit():
-            fields = {}
-            field_l2 = form.name_l2.data
-            fields_l3 = form.flist.data
-            fields['level2'] = field_l2
-            fields['level3'] = fields_l3
-            Database.add_subgraph(new_root, fields, uuid_classification)
+        #if form.validate_on_submit():
+        fields = {}
+        field_l2 = form.name_l2.data
+        fields_l3 = form.flist.data
+        fields['level2'] = field_l2
+        fields['level3'] = fields_l3
+        Database.add_subgraph(new_root, fields, uuid_classification)
 
-            #  clear the form
-            form.name_l2.data = ''
-            form.flist.entries.clear()
-            return render_template('add_subgraph.html', new_root=new_root, form=form)
+        #  clear the form
+        form.name_l2.data = ''
+        form.flist.entries.clear()
+        return render_template('add_subgraph.html', new_root=new_root, form=form)
 
     if form.submit.data:
         return redirect(url_for('my_classifications', user=current_user.get_username()))
 
     return render_template('add_subgraph.html', form=form, new_root=new_root)
 
-
-@app.route('/add_translation/<uuid_classification>/<language>/', methods=['GET', 'POST'])
-@app.route('/add_translation/<uuid_classification>/', defaults={'language': None}, methods=['GET', 'POST'])
+@app.route('/add_translation/<uuid_classification>/<language>/<root_selected>/', methods=['GET', 'POST'])
+@app.route('/add_translation/<uuid_classification>/<language>/', defaults={'root_selected': None},  methods=['GET', 'POST'])
+@app.route('/add_translation/<uuid_classification>/', defaults={'language': None, 'root_selected': None}, methods=['GET', 'POST'])
 @login_required
-def add_translation(uuid_classification, language):
+def add_translation(uuid_classification, language, root_selected):
     # clone a classification if necessary
     Database.cloning_check(uuid_classification)
 
     form = AddTranslationForm()
     classification_name = MongoDB.find_classification_name(uuid_classification) #Verifier que classification existe
 
-    root_fields = Database.find_root_fields()  # préciser la classification non?
+    root_fields = Database.find_root_fields(uuid_classification)
     form.root_field.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
 
     if form.valid.data:
@@ -188,26 +186,30 @@ def add_translation(uuid_classification, language):
         return redirect(url_for('add_translation', uuid_classification=uuid_classification, language=language))
 
     if form.valid2.data:
-        uuid_root_selected = form.root_field.data # renvoyer à html uuid ou autre chose ?
-        root_selected = Database.find_name(uuid_root_selected) #id : username ou uuid????????
-        field_l2 = Database.find_subfields_2(uuid_root_selected) #return dico
+        uuid_root_selected = form.root_field.data
+        return redirect(url_for('add_translation', uuid_classification=uuid_classification, language=language, root_selected=uuid_root_selected))
 
-        return render_template('add_translation.html', form=form, field_l2=field_l2, language=language,
-                               classification_name=classification_name, root_selected=root_selected)
-
-    if form.valid3.data: #comme valid  normal
-        print(request.form.items())
+    if form.valid3.data:
         for key, val in request.form.items():
             if key.startswith("f-"):
-                name_field = (key.partition('-')[2]).strip()     #  Change name into uuid or not ?
-                Database.add_translation(name_field, val, language)   #  Préciser quelle classification ?
+                name_field = (key.partition('-')[2]).strip()     #  Change name into uuid or not ? yes
+                Database.add_translation(name_field, val, language, uuid_classification)  # translation of levels 2 & 3
+        root_selected_name = Database.find_name(root_selected)
+        Database.add_translation(root_selected_name, form.root_translation.data, language, uuid_classification) # translation of the root (level 1)
         return redirect(url_for('add_translation', uuid_classification=uuid_classification, language=language))
 
-    if form.finish.data:
+    if form.finish.data:  # no save
         return redirect(url_for('my_classifications', user=current_user.get_username()))
 
+    if root_selected != None:  # form.valid3 redirect here
+        uuid_root_selected = root_selected
+        field_l2 = Database.find_subfields_2(uuid_root_selected, uuid_classification)  # return dico
+        root_selected_name = Database.find_name(uuid_root_selected)
+        return render_template('add_translation.html', form=form, classification_name=classification_name,
+                               language=language, field_l2=field_l2, root_selected_name=root_selected_name)
+
     return render_template('add_translation.html', form=form, classification_name=classification_name,
-                           language=language)
+                           language=language, root_selected=root_selected)
 
 
 @app.route('/add_field/<classification_uuid>', methods=['GET', 'POST'])
@@ -218,8 +220,8 @@ def add_field(classification_uuid):
 
     form = AddFieldForm()
 
-    root_fields = Database.find_root_fields()
-    level2_fields = Database.find_same_level_fields(2)
+    root_fields = Database.find_root_fields(classification_uuid)
+    level2_fields = Database.find_same_level_fields(2, classification_uuid)
 
     form.root_field_attached.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
     form.level2_field.choices += [(field['uuid'], field['name']) for field in level2_fields] # a afficher + executer que qd nécessaire
