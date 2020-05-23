@@ -313,15 +313,24 @@ class Database:
                      RETURN 1''', uuid_classification=uuid_classification)
 
     @staticmethod
-    def add_field(field, level):
+    def add_field(field, level, origin_field, uuid_classification):
 
-        """adds a field to the database
+        """adds a field in a specific classification to the database
 
             :param field: the name of the field
-            :param level: the relationship level of the field"""
+            :param level: the relationship level of the field
+            :param relation: the relationship wanted
+            :param origin_field: the uuid of the field to which to add another field
+            :param uuid_classification: the specific classification """
 
-        field_node = Node('Field', name=field, level=level)
-        graph.create(field_node)
+        request = graph.run("""MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f1:Field{uuid:{origin_field}}) 
+                              WITH f1 
+                              CREATE (f2:Field{name:{name}, level:{level}})
+                              CREATE (f1)-[:include]->(f2)""", uuid_classification=uuid_classification,
+                            origin_field=origin_field, name=field, level=level)
+
+        # field_node = Node('Field', name=field, level=level)
+        # graph.create(field_node)
 
     @staticmethod
     def add_root_field(field, uuid_classification):  # level forcément à 1
@@ -410,7 +419,8 @@ class Database:
         """ """
         req = graph.run('''MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f1:Field {name:{field}})
                            CREATE (f1)-[:translate_into{language:{language}}]->(f2:Field {name:{translated_field}})''',
-                        field=field, translated_field=translated_field, language=language, uuid_classification=uuid_classification)
+                        field=field, translated_field=translated_field, language=language,
+                        uuid_classification=uuid_classification)
         return req
 
     @staticmethod
@@ -572,11 +582,11 @@ class Database:
         return rel  # rel[0]['type']
 
     @staticmethod
-    def find_all_fieldsss():
-        fields = graph.run('''MATCH (f:Field)
+    def find_all_fieldss(uuid_classification):
+        fields = graph.run('''MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f:Field)
                               WITH f
                               ORDER BY f.name
-                              RETURN f.name AS name, f.uuid AS uuid''').data()
+                              RETURN f.name AS name, f.uuid AS uuid''', uuid_classification=uuid_classification).data()
         return fields
 
     @staticmethod
@@ -653,19 +663,21 @@ class Database:
         return sorted_final_list
 
     @staticmethod
-    def delete_field(field_name):
+    def delete_field(uuid_field):
 
-        """Deletes the field and all its relationships
+        """Deletes the field and all its relationships/subnodes
 
-            :param field_name: the name of the field to delete"""
+            :param uuid_field: the uuid of the field to delete"""
 
-        field_node = Database.find_one_field(field_name)
-        graph.delete(field_node)
 
-        # req = '''MATCH (f:Field{uuid:{uuid}})
-        #                        DETACH DELETE f'''
-
-        # graph.run(req, uuid=uuid_field)
+        req = graph.run('''MATCH (f:Field{uuid:{uuid_field}})
+                     CALL apoc.path.subgraphAll(f, {relationshipFilter:'include>|concerns>'})
+                     YIELD nodes, relationships
+                     UNWIND nodes AS n
+                     DETACH DELETE n
+                     DETACH DELETE f
+                     RETURN 1''', uuid_field=uuid_field)
+        return req
 
     @staticmethod
     def delete_buzz_word(buzzword):
@@ -688,21 +700,6 @@ class Database:
         graph.delete(question_node)
 
     @staticmethod
-    def delete_relation(field1, field2, relation_name):
-
-        """Deletes the relationship between 2 fields
-
-            :param field1: the name of one of the two fields
-            :param field2: the name of the other field
-            :param relation_name: the relationship between the two fields"""
-
-        start_node = Database.find_one_field(field1)
-        end_node = Database.find_one_field(field2)
-        #  be careful to check the existence of the nodes before
-        relationship = graph.match_one(nodes=(start_node, end_node), r_type=relation_name)
-        graph.separate(relationship)
-
-    @staticmethod
     def add_is_cloned_property(uuid_classification):
 
         """Add 'is_cloned' property of a field
@@ -716,24 +713,16 @@ class Database:
         return 0
 
     @staticmethod
-    def edit_field(field_name, new_name, new_level):
+    def edit_field(uuid_field, new_name):
 
         """Edits the properties of a field
 
-            :param field_name: the name of the field to edit
-            :param new_name: the new name of the field
-            :param new_level: the new level of the field"""
+            :param uuid_field: the uuid of the field to edit
+            :param new_name: the new name of the field"""
 
-        field_node = Database.find_one_field(field_name)
-
-        field_node['name'] = new_name
-        field_node['level'] = new_level
-
-        graph.push(field_node)
-
-        # req = '''MATCH (f:Field{uuid:{uuid}})
-        #                 SET f.name = {name}'''
-        # graph.run(req, uuid=uuid_field, name=name)
+        req = graph.run("""MATCH(f:Field{uuid:{uuid_field}}) SET f.name={new_name}""", uuid_field=uuid_field,
+                        new_name=new_name)
+        return req
 
     @staticmethod
     def edit_field_request(uuid_field, name):
@@ -742,14 +731,13 @@ class Database:
         return request
 
     @staticmethod
-    def add_field_request(name, level, relation, origin_field):
+    def add_field_request(name, level, relation, origin_field, uuid_classification):
 
-        request = "MATCH (f1:Field{uuid:" + origin_field + "}) " \
-                                                           "WITH f1 " \
-                                                           "CREATE (f2:Field{name:" + name + ", level:" + level + "})" \
-                                                                                                                  "CREATE (f1)-[r:" + relation + "]->(f2)"
-        # attention propriété name et uuid en string
-
+        request = "MATCH (c:Classification{uuid: " + uuid_classification + "}})-[:include*1..4]->(f1:Field{uuid:" + origin_field + "}) " \
+                                                                                                                                  "WITH f1 " \
+                                                                                                                                  "CREATE (f2:Field{name:" + name + ", level:" + level + "})" \
+                                                                                                                                                                                         "CREATE (f1)-[r:" + relation + "]->(f2)"
+        # attention ! name & uuid properties in str
         return request
 
     @staticmethod
@@ -763,15 +751,15 @@ class Database:
         """
 
         request = "MATCH (f1:Field{uuid:" + uuid_field1 + "})-[r:" + old_relation + "]->(f2:Field{uuid:" + uuid_field2 + "}) " \
-                                                                                                                         "WITH r, f1, f2 " \
-                                                                                                                         "DELETE r " \
-                                                                                                                         "CREATE (f1)-[r:" + new_relation + "]->(f2)"
+                 "WITH r, f1, f2 " \
+                 "DELETE r " \
+                 "CREATE (f1)-[r:" + new_relation + "]->(f2)"
         # attention propriété name et uuid en string
 
         return request
 
     @staticmethod
-    def add_rel_request(uuid_field1, uuid_field2, new_relation):
+    def edit_rel(uuid_field1, uuid_field2, old_relation, new_relation):
         """
         :param uuid_field1: origin field
         :param uuid_field2: end field
@@ -780,11 +768,46 @@ class Database:
         :return:
         """
 
-        request = "MATCH (f1:Field{uuid:" + uuid_field1 + "}),(f2:Field{uuid:" + uuid_field2 + "}) " \
-                                                                                               "CREATE (f1)-[r:" + new_relation + "]->(f2)"
-        # attention propriété name et uuid en string
+        req = graph.run("""MATCH (f1:Field{uuid:{uuid_field1}})-[r:"""+old_relation+"""]->(f2:Field{uuid:{uuid_field2}})
+                            WITH r, f1, f2
+                            DELETE r 
+                            CREATE (f1)-[r2:""" + new_relation + """]->(f2)""",
+                        uuid_field1=uuid_field1, uuid_field2=uuid_field2)
+        return req
+
+    @staticmethod
+    def add_rel_request(uuid_field1, uuid_field2, new_relation, uuid_classification):
+        """
+        :param uuid_field1: origin field
+        :param uuid_field2: end field
+        :param old_relation:
+        :param new_relation:
+        :return:
+        """
+
+        request = "MATCH (c:Classification{uuid:"+ uuid_classification +"}})-[:include*1..4]->(f1:Field{uuid:" + uuid_field1 + "})" \
+                  "MATCH (f2:Field{uuid:" + uuid_field2 + "}) " \
+                  "WITH f1, f2"\
+                   "CREATE (f1)-[r:" + new_relation + "]->(f2)"
+        # attention name & uuid properties in str
 
         return request
+
+    @staticmethod
+    def add_relation(uuid_field1, uuid_field2, new_relation, uuid_classification):
+        """
+        :param uuid_field1: origin field
+        :param uuid_field2: end field
+        :param old_relation:
+        :param new_relation:
+        :return:
+        """
+        req = graph.run("""MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f1:Field{uuid:{uuid_field1}})
+                     MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f2:Field{uuid:{uuid_field2}})
+                     WITH f1, f2
+                     CREATE (f1)-[:"""+new_relation+"""]->(f2)
+                    """, uuid_classification=uuid_classification, uuid_field1=uuid_field1, uuid_field2=uuid_field2)
+        return req
 
     @staticmethod
     def delete_relation_request(uuid_field1, uuid_field2, relation_name):
@@ -798,21 +821,39 @@ class Database:
         # Be carreful to check the existence of the nodes
 
         request = "MATCH (f1:Field{uuid:" + uuid_field1 + "})-[r:" + relation_name + "]->(f2:Field{uuid:" + uuid_field2 + "}) " \
-                                                                                                                          "DELETE r "
+                  "DELETE r "
+        return request
+
+    @staticmethod
+    def delete_relation(uuid_field1, uuid_field2, relation_name):
+
+        """Deletes the relationship between 2 fields
+
+            :param uuid_field1: the uuid of one of the two fields
+            :param uuid_field2: the uuid of the other field
+            :param relation_name: the relationship between the two fields"""
+
+        request = graph.run("""MATCH (f1:Field{uuid:{uuid_field1}})-[r:""" + relation_name + """]->(f2:Field{uuid:{uuid_field2}})
+                               DELETE r """, uuid_field1=uuid_field1, uuid_field2=uuid_field2)
         return request
 
     @staticmethod
     def add_relation_request(relation, origin_field, end_field):
 
         request = "MATCH (f1:Field{uuid:" + origin_field + "}), (f2:Field{uuid:" + end_field + "}) " \
-                                                                                               "CREATE (f1)-[r:" + relation + "]->(f2)"
-        print(request)
+                  "CREATE (f1)-[r:" + relation + "]->(f2)"
         return request
 
     @staticmethod
     def delete_field_request(uuid_field):
 
-        request = "MATCH (f:Field{uuid:" + uuid_field + "}) DETACH DELETE f"
+        request = "MATCH (f:Field{uuid:" + uuid_field + "}) " \
+                  "CALL apoc.path.subgraphAll(f, {relationshipFilter:'include>|concerns>'})" \
+                  "YIELD nodes, relationships"\
+                  "UNWIND nodes AS n"\
+                  " DETACH DELETE n"\
+                  "DETACH DELETE f"\
+                  "RETURN 1"
         return request
 
     @staticmethod
@@ -875,7 +916,8 @@ class Database:
                                   WITH f2, f3
                                   ORDER BY f3.name
                                   RETURN f2.name AS name, collect(f3.name) AS subfields, f2.uuid AS uuid
-                                  ORDER BY f2.name''', field_uuid=field_uuid, uuid_classification=uuid_classification).data()  # empty list if level 3
+                                  ORDER BY f2.name''', field_uuid=field_uuid,
+                           uuid_classification=uuid_classification).data()  # empty list if level 3
 
         return fields
 
@@ -1008,13 +1050,12 @@ class Database:
     def find_classification(uuid):  # Ou ID?
         req = graph.run('''MATCH (c:Classification{uuid:{uuid}})-[:include]->(f:Field)
                            RETURN f''', uuid=uuid).data()
-        if not req : # so if request empty
+        if not req:  # so if request empty
             req2 = graph.run('''OPTIONAL MATCH (c:Classification{uuid:{uuid}})-[:forked_from]->(c2:Classification)
                                WHERE EXISTS (c2.uuid)
                                RETURN c2.uuid AS uuid''', uuid=uuid).data()
             uuid = req2[0]['uuid']  # take the uuid of the ancestor classification (case where someone fork a
             # classification and doesn't do modification)
-
 
         levels_1_2 = graph.run('''MATCH (c:Classification{uuid:{uuid}})-[:include]->(f:Field{level:1})
                                       -[:include]->(f2:Field) 

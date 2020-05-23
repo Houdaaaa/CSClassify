@@ -5,13 +5,11 @@ from models import *
 from flask import render_template, url_for, request, jsonify
 from forms import *
 from wtforms import FieldList, StringField
-from wtforms.validators import DataRequired, Optional
+from wtforms.validators import DataRequired
 
 # Database.database_creation()
-#print(Database.cloning_check("5e6635494d2cd76913ff1850"))
-Database.delete_classification("738e611a-9acf-11ea-a3c0-defb489c9703")
-#Spécial Editx + buzz words
-#Aller chercher le graph spécifique à Editx pour ça ?
+
+# Special for Editx db and buzz words
 @app.route('/', defaults={'bw': 'Cloud computing'})  # to pre-select a buzz word
 @app.route('/<bw>')
 def index(bw):
@@ -52,7 +50,7 @@ def my_classifications(user):
 @app.route('/classification/<name>/<bw>')
 def display_classification(name, bw):  # id au lieu de name?
     infos = MongoDB.find_classification_info(name)
-    uuid_classification = str(infos['_id']) #on a qd mm besoin de uuid pour graphs
+    uuid_classification = str(infos['_id'])
     classification = Database.find_classification(uuid_classification)
     #verifier if classification == [] (veut dire pas de uuid synchro entre mongoDB et NEo4J, ou classif vide)
 
@@ -70,11 +68,6 @@ def display_classification(name, bw):  # id au lieu de name?
         user_id = infos['user_id']
         if user_id == current_user.get_id_2():
             is_user_classification = True
-
-
-    #If bouton traduire submit:
-        # on fork ou pas?
-        # redirect ou? à reflechir
 
     return render_template('classification.html', classification=classification, buzzWords=buzzwords,
                            buzzWordFields=buzzword_fields,
@@ -238,11 +231,13 @@ def add_field(classification_uuid):
             req = ""
             if form.level.data == '2':
                 uuid_root = form.root_field_attached.data
-                req = Database.add_field_request(name, level, 'include', uuid_root)
+                req = Database.add_field_request(name, level, 'include', uuid_root, classification_uuid)
+                req2 = Database.add_field(name, level, uuid_root, classification_uuid)
 
             if form.level.data == '3':
                 uuid_level2_field = form.level2_field.data
-                req = Database.add_field_request(name, level, 'include', uuid_level2_field)
+                req = Database.add_field_request(name, level, 'include', uuid_level2_field, classification_uuid)
+                req2 = Database.add_field(name, level, uuid_level2_field, classification_uuid)
 
             mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                                {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
@@ -261,8 +256,8 @@ def add_relation(classification_uuid):
 
     form = AddRelForm()
 
-    root_fields = Database.find_root_fields()
-    all_fields = Database.find_all_fieldsss()
+    root_fields = Database.find_root_fields(classification_uuid)
+    all_fields = Database.find_all_fieldss(classification_uuid)
     form.root_field1.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
     form.field1.choices += [(field['uuid'], field['name']) for field in all_fields]
     form.root_field2.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
@@ -274,7 +269,8 @@ def add_relation(classification_uuid):
             uuid_field2 = form.field2.data
             rel = form.type_rel.data
 
-            req = Database.add_rel_request(uuid_field1, uuid_field2, rel)
+            req = Database.add_rel_request(uuid_field1, uuid_field2, rel, classification_uuid)
+            req2 = Database.add_relation(uuid_field1, uuid_field2, rel, classification_uuid)
             mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                                {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
                                                upsert=False)
@@ -292,19 +288,20 @@ def edit_relation(classification_uuid):
 
     form = EditRelForm()
 
-    root_fields = Database.find_root_fields()
-    all_fields = Database.find_all_fieldsss()
+    root_fields = Database.find_root_fields(classification_uuid)
+    all_fields = Database.find_all_fieldss(classification_uuid)
     form.root_field1.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
     form.field1.choices += [(field['uuid'], field['name']) for field in all_fields]
     form.root_field2.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
     form.field2.choices += [(field['uuid'], field['name']) for field in all_fields]
 
     if form.delete.data:
-        if form.validate_on_submit(): #validation in form.py est suffisante?
+        if form.validate_on_submit():  # validation in form.py est suffisante ?
             uuid_field1 = form.field1.data
             uuid_field2 = form.field2.data
             rel = form.actual_rel.data
             req = Database.delete_relation_request(uuid_field1, uuid_field2, rel)
+            req2 = Database.delete_relation(uuid_field1, uuid_field2, rel)
             mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                                {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
                                                upsert=False)
@@ -317,6 +314,7 @@ def edit_relation(classification_uuid):
             new_rel = form.type_rel.data
 
             req = Database.edit_rel_request(uuid_field1, uuid_field2, form.actual_rel.data, new_rel)
+            req2 = Database.edit_rel(uuid_field1, uuid_field2, form.actual_rel.data, new_rel)
             mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                                {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
                                                upsert=False)
@@ -334,20 +332,20 @@ def edit_field(classification_uuid):
     form = EditFieldForm()
 
     # print(form.errors)
-    root_fields = Database.find_root_fields()    #IL FAUT RECONSTRUIRE LA DB ICI
-    all_fields = Database.find_all_fieldsss()
+    root_fields = Database.find_root_fields(classification_uuid)
+    all_fields = Database.find_all_fieldss(classification_uuid)
     form.root.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
     form.fields.choices += [(field['uuid'], field['name']) for field in all_fields]
 
     if form.delete.data:
-        if form.validate_on_submit():
-            uuid_field = form.fields.data
-            req = Database.delete_field_request(uuid_field)
-            timestamp = datetime.utcnow()
-            mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
-                                               {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
-                                               upsert=False)
-            return redirect(url_for('all_classifications'))  # redirect to la même page? pour autre modification
+        uuid_field = form.fields.data
+        req = Database.delete_field_request(uuid_field)
+        req2 = Database.delete_field(uuid_field)
+        timestamp = datetime.utcnow()
+        mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
+                                           {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
+                                           upsert=False)
+        return redirect(url_for('all_classifications'))  # redirect to la même page? pour autre modification
 
     if form.edit.data:
         form.new_field.validators = [DataRequired()]
@@ -355,6 +353,7 @@ def edit_field(classification_uuid):
             uuid_field = form.fields.data
             new_name = form.new_field.data
             req = Database.edit_field_request(uuid_field, new_name)
+            req2 = Database.edit_field(uuid_field, new_name)
             timestamp = datetime.utcnow()
             mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                                {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
@@ -368,7 +367,7 @@ def edit_field(classification_uuid):
 @app.route('/get_fields/<id_root>')
 def get_fields(id_root):
     fields = Database.find_fields(id_root)
-    if not fields:  # si le dico est vide
+    if not fields:  # if empty dictionary
         return jsonify([])
     else:
         return jsonify(fields)
@@ -378,10 +377,10 @@ def get_fields(id_root):
 def get_rel(id_field1, id_field2):
     rel = Database.find_rel(id_field1, id_field2)
     print(rel)
-    if not rel:  # si le dico est vide
+    if not rel:   # if empty dictionary
         return jsonify([])
     else:
-        return jsonify(rel) #rel est juste un mot, transforme en liste or not?
+        return jsonify(rel)  # rel is just a word
 
 
 @app.route('/login', methods=['GET', 'POST'])
