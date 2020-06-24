@@ -7,15 +7,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 
-# app.config['MONGO_DBNAME'] = 'csclassify'
 app.config['MONGO_URI'] = 'mongodb://127.0.0.1:27017/csclassify'
 
 # connection to the MongoDB database
 mongo = PyMongo(app)
 
 # To use extension flask-login
-# login_manager = LoginManager()
-# login_manager.init_app(app)
 login = LoginManager(app)
 login.login_view = 'login'
 
@@ -29,12 +26,12 @@ matcher = NodeMatcher(graph)
 
 class User:
 
-    # graphs_id = ''
-    # Add others param here?
+    """ This class concern "Flask-login" module.
+    It about user acccount management. """
 
     def __init__(self, username):
         self.username = username
-        self.lastname = ''  # utile d'écrire ça comme ça ?
+        self.lastname = ''
         self.firstname = ''
         self.email = ''
         self.job = ''
@@ -70,9 +67,15 @@ class User:
     def set_id_2(self, id):
         self.id = id
 
-    @login.user_loader  # Flask-login also requires you to define a “user_loader” function which, given a user ID, returns the associated user object.
-    def load_user(username):  # ou avec id
-        u = mongo.db.Users.find_one({"username": username})  # find_one_or_404 ?
+    @login.user_loader  #
+    def load_user(username):
+
+        """ Flask-login also requires you to define a “user_loader” function which, given a user ID,
+        returns the associated user object.
+
+        :return: the associated user object """
+
+        u = mongo.db.Users.find_one({"username": username})
         if not u:
             return None
         user_obj = User(username=u['username'])
@@ -120,7 +123,7 @@ class User:
     def get_graphs_id(self):
         return self.graphs_id
 
-    def set_graphs_id(self, id_list):  # uuid list of strings
+    def set_graphs_id(self, id_list):  # uuid: list of strings
         self.graphs_id = id_list
 
     def add_graphs_id(self, id):
@@ -136,6 +139,11 @@ class User:
         self.set_id_2(id)
 
     def convert_to_doc(self):
+
+        """ Convert the user object to a dictionary
+
+        :return: dictionary with informations about the user """
+
         doc = {
             'lastname': self.lastname,
             'firstname': self.firstname,
@@ -148,15 +156,22 @@ class User:
 
         return doc
 
-    # Ajouter comme méthodes : Login_Valide(email, password), Json, Register(username, email, password), save_to_mongo
-
 
 class MongoDB:
+
+    """ This class concern request to the mongoDB database  """
+
     user_collection = mongo.db.Users
     classification_collection = mongo.db.Classification
 
     @staticmethod
     def add_classification(classification):
+
+        """ Add classification to mongoDB
+
+        :param classification: informations about the classification
+        :return: uuid of the classification """
+
         req = mongo.db.Classification.insert_one(classification)
         uuid = str(req.inserted_id)
         Database.add_classification_2(uuid)
@@ -165,6 +180,12 @@ class MongoDB:
 
     @staticmethod
     def delete_classification(uuid_classification):
+
+        """ Delete a classification
+
+        :param uuid_classification: uuid of the classification
+        :return: uuid of the deleted classification """
+
         uuid = ObjectId(uuid_classification)
         req = mongo.db.Classification.delete_one({'_id': uuid})
         Database.delete_classification(uuid_classification)
@@ -172,56 +193,63 @@ class MongoDB:
 
     @staticmethod
     def find_all_classifications_names():
+
+        """ Find the name of all classification existing in the mongoDB
+
+        :return: dictionary with all classifications names """
+
         req = mongo.db.Classification.find({}, {'name': 1, '_id': 0})  # order by c.name    print(req[0]['name'])
         names = req.sort('name')
         return req
 
     @staticmethod
-    def find_classifications_names(user_id):  # id_graphs = list of ints -- doit etre objectId
-        """
-        :param user_id: int
-        :return:
-        """
+    def find_classifications_names(user_id):  # id_graphs = list of ints -- must be objectId
+
+        """ Find the names of the classification that the user has created
+
+        :param user_id: the uuid of the user
+        :return: dictionary with all classification names created by the user """
+
         req = mongo.db.Classification.find({'user_id': user_id}, {'_id': 0, 'name': 1})  # censé être un ObjectID
         names = req.sort('name')
-        # req = mongo.db.Classification.find({'_id': {"$in": graphs_id}}, {'name': 1, '_id': 0})si plusieurs graphs/users
 
         return names
 
     @staticmethod
     def find_classification_info(name):
+
+        """ Find all information about one classification
+
+        :param name: the name of the classification
+        :return: All information about the classification """
+
         infos = mongo.db.Classification.find_one({'name': name}, {'_id': 1, 'user_id': 1})
         return infos
 
     @staticmethod
-    def get_logs(uuid_classification):
-        uuid = ObjectId(uuid_classification)
-        logs = mongo.db.Classification.find_one({'_id': uuid}, {'_id': 0, 'logs': 1})
-        ##Verif if logs == None (soit id pas bon ou pas de logs)
-
-        for query in logs['logs']:  # query = dict
-            Graph.run(query['request'])
-        print(logs)
-        # ajouter MATCH c:Classification{uuid:uuid}-rel>f:Field, WITH f + req (dans autre fonction)
-
-        # reprendre l'ancestre, y appliquer les request et afficher la base de données ainsi
-        return logs
-
-    @staticmethod
     def find_classification_name(uuid_classification):
+
+        """ Find the name of a classification given the uuid
+
+        :param uuid_classification: uuid of the classification
+        :return: the name of the classification """
+
         info = mongo.db.Classification.find_one({'_id': ObjectId(uuid_classification)}, {'_id': 0, 'name': 1})
-        # Verifier que classification existe
         print(info)
         return info['name']
 
 
 class Database:
 
+    """ This class concern all Neo4j DB requests."""
+
     @staticmethod
     def cloning_check(uuid_classification):  # when fork
-        # Real clone from ancestor classification
-        # Verifier si variable "is_cloned", si true
-        # si pas de variable : if (forked_from), vérifier le sens ensuite cloner l'un ou l'autre
+
+        """Real clone from ancestor classification
+
+        :param uuid_classification: uuif of the classification choosed
+        :return: 0 """
 
         is_cloned = graph.run('''
                         MATCH (c:Classification{uuid:{uuid_classification}})
@@ -268,6 +296,12 @@ class Database:
 
     @staticmethod
     def clone_subgraph(uuid_classification_to_clone, uuid_clone):
+
+        """ Clone a subgraph
+
+        :param uuid_classification_to_clone: uuid of the classification to clone
+        :param uuid_clone: uuid of the clone """
+
         req = graph.run('''
                     MATCH  (rootA:Classification{uuid:{uuid_classification_to_clone}}),
                            (rootB:Classification{uuid:{uuid_clone}})
@@ -287,14 +321,17 @@ class Database:
 
         return req
 
-    @staticmethod
-    def classification_reconstruction(uuid_classification):
-        return 'ok'
+
 
     @staticmethod
     def add_classification_2(uuid):
+
+        """Add a Node "Classification"
+
+        :param uuid: The uuid of the classification"""
+
         classification_node = Node('Classification',
-                                   uuid=uuid)  # id_user et name??? est-ce que la redondance vaut la peine ?
+                                   uuid=uuid)
         graph.create(classification_node)
 
     @staticmethod
@@ -333,9 +370,9 @@ class Database:
         # graph.create(field_node)
 
     @staticmethod
-    def add_root_field(field, uuid_classification):  # level forcément à 1
+    def add_root_field(field, uuid_classification):  # level = 1 always
 
-        """adds a field to the database
+        """Adds a field to the database
 
             :param field: the name of the field
             :param level: the relationship level of the field"""
@@ -345,15 +382,13 @@ class Database:
                   name=field).data()
 
     @staticmethod
-    def add_subgraph(root_name, fields,
-                     uuid_classification):  # au lieu de root_name root_uuid, préciser la classification?
+    def add_subgraph(root_name, fields, uuid_classification):
 
-        """
+        """Add a subgraph to a classification
 
-        :param root_name:
-        :param fields:
-        :return:
-        """
+        :param uuid_classification: The uuid of the classification
+        :param root_name: The name of the root of the sybgraph (so the field with level = 1)
+        :param fields: All fields that define the subgraph"""
 
         field_l2 = fields['level2']
         fields_l3 = fields['level3']
@@ -391,21 +426,30 @@ class Database:
         graph.create(buzz_word)
 
     @staticmethod
-    def add_classification(name):  # User en param after
+    def add_classification(name):
+
+        """ Add a classification to te DB using the name
+        (Don't use it)
+
+        :param name: The name of the classification
+        :return: The uuid of the classification """
 
         classification_node = Node('Classification', name=name)
         graph.create(classification_node)
 
         uuid = graph.run('''MATCH (c: Classification{name:{name}})  
                             RETURN c.uuid AS uuid''',
-                         name=name).data()  # La requête doit obligatoirement se faire en 2 fois
+                         name=name).data()
         print(uuid)
         return uuid[0]['uuid']
 
     @staticmethod
     def add_subclassification_relationship(classification_id, l1_fields_list):
 
-        """l1_fields_list : list of names"""
+        """ Add relationship "include" between fields
+
+        :param classification_id: The uuid of the concerned classification
+        :param l1_fields_list: List of fields names which are fields of the classification """
 
         f1 = matcher.match("Classification", uuid=classification_id).first()  # au lieu du name : id?
 
@@ -416,7 +460,13 @@ class Database:
     @staticmethod
     def add_translation(field, translated_field, language, uuid_classification):
 
-        """ """
+        """Add a translation of a field of a classification
+
+        :param field: the field to translate
+        :param translated_field: the translation of the field
+        :param language: the language of translation
+        :param uuid_classification: The uuid of the concerned classification"""
+
         req = graph.run('''MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f1:Field {name:{field}})
                            CREATE (f1)-[:translate_into{language:{language}}]->(f2:Field {name:{translated_field}})''',
                         field=field, translated_field=translated_field, language=language,
@@ -424,7 +474,7 @@ class Database:
         return req
 
     @staticmethod
-    def add_fork_relationship(classification_uuid, ancestor_uuid):  # Attention ici on travaille avec les id
+    def add_fork_relationship(classification_uuid, ancestor_uuid):
 
         """adds a relationship between a field and its subfield to the database
 
@@ -514,7 +564,6 @@ class Database:
         buzzword_node = matcher.match("BuzzWord", name=name).first()
         return buzzword_node
 
-    '''for questions and subfiels of a field'''  # attention juste pour un niveau, autre fonction pour trouver pour afficher tout le sous-graphe
 
     @staticmethod
     def find_sub_nodes(field_name, relationName):
@@ -549,6 +598,12 @@ class Database:
 
     @staticmethod
     def find_root_fields(uuid_classification):
+
+        """Find the fields with level=1 of a classification
+
+        :param uuid_classification: The uuid of the concerned classification
+        :return: The root fields """
+
         fields = graph.run('''MATCH ((c:Classification{uuid:{uuid_classification}})-[:include]->(f:Field{level:1}))
                               WITH f
                               ORDER BY f.name
@@ -557,12 +612,24 @@ class Database:
 
     @staticmethod
     def find_level(field_uuid):
+
+        """ Find the level of a field
+
+        :param field_uuid: The uuid of the concerned field
+        :return: The level of this field """
+
         level = graph.run('''MATCH (f:Field{uuid:{field_uuid}})
                               RETURN f.level AS level''', field_uuid=field_uuid).data()
         return level[0]['level']
 
     @staticmethod
     def find_fields(root_id):
+
+        """Find all field of a root field
+
+        :param root_id: The uuid of the concerned root_field
+        :return: All subfields of the root_field"""
+
         fields = graph.run('''MATCH (f:Field{level:1, uuid:{root_id}})-[:include*1..2]->(f2:Field)
                               WITH f2
                               ORDER BY f2.name
@@ -571,18 +638,37 @@ class Database:
 
     @staticmethod
     def find_name(uuid_field):
+
+        """ Find the name of a field
+
+        :param uuid_field: the uuif of the concerned field
+        :return: The name of this field"""
+
         field = graph.run('''MATCH (f:Field{uuid:{uuid_field}})
                              RETURN f.name AS name''', uuid_field=uuid_field).data()
         return field[0]['name']
 
     @staticmethod
     def find_rel(field1, field2):
+
+        """ Find the type of the relationship between two fields.
+            Beware, direction is important.
+
+        :param field1: First field
+        :param field2: Second field
+        :return: The name of the relationship between these two fields """
+
         rel = graph.run('''MATCH (f1:Field{uuid:{field1}})-[r]->(f2:Field{uuid:{field2}})
                                RETURN type(r) AS type''', field1=field1, field2=field2).data()
         return rel  # rel[0]['type']
 
     @staticmethod
     def find_all_fieldss(uuid_classification):
+
+        """Find all fields of a classification
+
+        :param uuid_classification: the uuid of the concerned classification
+        :return: All fields of the classification"""
         fields = graph.run('''MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f:Field)
                               WITH f
                               ORDER BY f.name
@@ -704,7 +790,7 @@ class Database:
 
         """Add 'is_cloned' property of a field
 
-            :param uuid_classification:         """
+            :param uuid_classification: the uuid of the concerned classification """
 
         req = '''MATCH (c:Classification{uuid:{uuid_classification}})
                         SET c.is_cloned = True'''
@@ -727,28 +813,42 @@ class Database:
     @staticmethod
     def edit_field_request(uuid_field, name):
 
+        """Generate the query that is used to edit a field
+
+        :param uuid_field: the uuid of the concerned field
+        :param name: the new name of this field"""
+
         request = "MATCH (f:Field{uuid:" + uuid_field + "}) SET f.name=" + name
         return request
 
     @staticmethod
     def add_field_request(name, level, relation, origin_field, uuid_classification):
 
+        """Generate the query that is used to create a field
+
+        :param name: The name of the new field
+        :param level: the level of the new field
+        :param relation: the type of the relationship between the new field and the origin field
+        :param origin_field: the field linked to the new field
+        :param uuid_classification: the uuid of the concerned classification
+        :return:the query to add this new field to the database """
         request = "MATCH (c:Classification{uuid: " + uuid_classification + "}})-[:include*1..4]->(f1:Field{uuid:" + origin_field + "}) " \
                                                                                                                                   "WITH f1 " \
                                                                                                                                   "CREATE (f2:Field{name:" + name + ", level:" + level + "})" \
                                                                                                                                                                                          "CREATE (f1)-[r:" + relation + "]->(f2)"
-        # attention ! name & uuid properties in str
+        # Beware ! name & uuid properties in str
         return request
 
     @staticmethod
     def edit_rel_request(uuid_field1, uuid_field2, old_relation, new_relation):
-        """
+
+        """Generate the query that is used to edita relationship
+
         :param uuid_field1: origin field
         :param uuid_field2: end field
-        :param old_relation:
-        :param new_relation:
-        :return:
-        """
+        :param old_relation: old relation
+        :param new_relation: the new relation
+        :return: the query to edit a relationship between uuid_field1 and uuid_field2 """
 
         request = "MATCH (f1:Field{uuid:" + uuid_field1 + "})-[r:" + old_relation + "]->(f2:Field{uuid:" + uuid_field2 + "}) " \
                  "WITH r, f1, f2 " \
@@ -760,13 +860,13 @@ class Database:
 
     @staticmethod
     def edit_rel(uuid_field1, uuid_field2, old_relation, new_relation):
-        """
+
+        """Edit a relationship between uuid_field1 and uuid_field2
+
         :param uuid_field1: origin field
         :param uuid_field2: end field
-        :param old_relation:
-        :param new_relation:
-        :return:
-        """
+        :param old_relation: old relation
+        :param new_relation: the new relation """
 
         req = graph.run("""MATCH (f1:Field{uuid:{uuid_field1}})-[r:"""+old_relation+"""]->(f2:Field{uuid:{uuid_field2}})
                             WITH r, f1, f2
@@ -777,31 +877,33 @@ class Database:
 
     @staticmethod
     def add_rel_request(uuid_field1, uuid_field2, new_relation, uuid_classification):
-        """
+
+        """Generate the query that is used to add a relationship between uuid_field1 and uuid_field2
+
         :param uuid_field1: origin field
         :param uuid_field2: end field
-        :param old_relation:
-        :param new_relation:
-        :return:
-        """
+        :param old_relation: old relationship
+        :param new_relation: the new relationship
+        :return:the query that is used to add a relationship between uuid_field1 and uuid_field2"""
 
         request = "MATCH (c:Classification{uuid:"+ uuid_classification +"}})-[:include*1..4]->(f1:Field{uuid:" + uuid_field1 + "})" \
                   "MATCH (f2:Field{uuid:" + uuid_field2 + "}) " \
                   "WITH f1, f2"\
                    "CREATE (f1)-[r:" + new_relation + "]->(f2)"
-        # attention name & uuid properties in str
+        # Beware, name & uuid properties in str
 
         return request
 
     @staticmethod
     def add_relation(uuid_field1, uuid_field2, new_relation, uuid_classification):
-        """
+
+        """Add a relationship between uuid_field1 and uuid_field2
+
         :param uuid_field1: origin field
         :param uuid_field2: end field
-        :param old_relation:
-        :param new_relation:
-        :return:
-        """
+        :param old_relation: old relationship
+        :param new_relation: the new relationship"""
+
         req = graph.run("""MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f1:Field{uuid:{uuid_field1}})
                      MATCH (c:Classification{uuid:{uuid_classification}})-[:include*1..4]->(f2:Field{uuid:{uuid_field2}})
                      WITH f1, f2
@@ -837,15 +939,15 @@ class Database:
                                DELETE r """, uuid_field1=uuid_field1, uuid_field2=uuid_field2)
         return request
 
-    @staticmethod
-    def add_relation_request(relation, origin_field, end_field):
 
-        request = "MATCH (f1:Field{uuid:" + origin_field + "}), (f2:Field{uuid:" + end_field + "}) " \
-                  "CREATE (f1)-[r:" + relation + "]->(f2)"
-        return request
 
     @staticmethod
     def delete_field_request(uuid_field):
+
+        """Generate query that is used to delete a field
+
+        :param uuid_field: the uuid of the concerned field
+        :return: the query that delete the field"""
 
         request = "MATCH (f:Field{uuid:" + uuid_field + "}) " \
                   "CALL apoc.path.subgraphAll(f, {relationshipFilter:'include>|concerns>'})" \
@@ -918,7 +1020,6 @@ class Database:
                                   RETURN f2.name AS name, collect(f3.name) AS subfields, f2.uuid AS uuid
                                   ORDER BY f2.name''', field_uuid=field_uuid,
                            uuid_classification=uuid_classification).data()  # empty list if level 3
-
         return fields
 
     @staticmethod
@@ -993,61 +1094,13 @@ class Database:
         return all_fields
 
     @staticmethod
-    def find_classification_bêta(name):  # Ou ID?
-        levels_1_2 = graph.run('''MATCH (c:Classification{name:{name}})-[:include]->(f:Field{level:1})
-                                  -[:include]->(f2:Field) 
-                                  WITH f, f2
-                                  ORDER BY f2.name
-                                  RETURN f.name AS name, collect(f2.name) AS subfields
-                                  ORDER BY f.name''', name=name).data()
+    def find_classification(uuid):
 
-        levels_2_3 = graph.run('''MATCH (c:Classification{name:{name}})-[:include]->(f:Field{level:1})-[:include]->
-                                  (f2:Field)-[:include]->(f3:Field)
-                                  WITH f2, f3
-                                  ORDER BY f3.name
-                                  RETURN f2.name AS name_L2, collect(f3.name) AS subfields_L3
-                                  ORDER BY f2.name''', name=name).data()
+        """ Find all field of a classification
 
-        all_fields = []
-        for rootField in levels_1_2:
-            root_field_dict = {}
-            root_field_dict["name"] = rootField['name']
-            root_field_dict["subfields"] = []
-            fields_used = []
+        :param uuid: the uuid of the concerned classification
+        :return: A dictionary that represent the classification desired"""
 
-            for field_L2 in levels_2_3:
-                if field_L2["name_L2"] in rootField['subfields']:  # rootField['subfields'] is an str list
-                    sub_field_dict = {}
-                    sub_field_dict["name"] = field_L2['name_L2']
-                    sub_field_dict["subfields"] = []
-                    for field_L3 in field_L2['subfields_L3']:
-                        if field_L3 not in sub_field_dict["subfields"]:  # to not have 2 x subfields
-                            sub_field_dict["subfields"].append(field_L3)  # when one node included by two fields
-                    root_field_dict["subfields"].append(sub_field_dict)
-                    fields_used.append(field_L2['name_L2'])
-
-            for field_L2_name in rootField['subfields']:  # for levels 2 which don't have a level 3
-                if field_L2_name not in fields_used:
-                    sub_field_dict = {}
-                    sub_field_dict["name"] = field_L2_name
-                    sub_field_dict["subfields"] = []
-                    root_field_dict["subfields"].append(sub_field_dict)
-
-            all_fields.append(root_field_dict)
-
-        # sorts alphabetically
-        for x in all_fields:
-            sorted_list_of_dict = sorted(x["subfields"], key=lambda k: k['name'])  # sort a list of dictionaries by the
-            # key: name (level 2)
-            x["subfields"] = sorted_list_of_dict
-            '''for y in x["subfields"]:
-                sortedList = sorted(y["subfields"])  #sort simply a list of strings (level 3)
-                y["subfields"] = sortedList'''
-
-        return all_fields
-
-    @staticmethod
-    def find_classification(uuid):  # Ou ID?
         req = graph.run('''MATCH (c:Classification{uuid:{uuid}})-[:include]->(f:Field)
                            RETURN f''', uuid=uuid).data()
         if not req:  # so if request empty
@@ -1118,7 +1171,7 @@ class Database:
                      DETACH DELETE n ''')
 
     @staticmethod
-    def fields_creation():  # ajouter champ classification
+    def fields_creation():
 
         """Creates the classification into the database"""
 
@@ -1169,13 +1222,14 @@ class Database:
                     Database.add_concerns_relationship(key, field)
 
     @staticmethod
-    def classification_creation():  # input : graph, output : dico de classification
+    def classification_creation():
+        """Creation of the cs-classify classification """
 
         with app.open_resource('db_creation/classification.json') as file:
             data = json.load(file)
 
             for key, value in data.items():
-                classification_uuid = Database.add_classification(key)  # ajouter condition "si n'existe pas"
+                classification_uuid = Database.add_classification(key)  # add checking if don't exist
                 Database.add_subclassification_relationship(classification_uuid, value)
 
     @staticmethod
@@ -1210,25 +1264,8 @@ class Database:
             'job': 'student',
             'website': 'www.cs-classify.net',
             'pseudo': 'Miss H',
-            'password': 'Blabla',
-            'graphs_id': 123456
+            'password': 'Blabla'
         }
 
         db.Classification.insert_one(classification)  # Collection : Classification
         db.Users.insert_one(users)  # Collection : Users
-
-
-'''
-$("#addNewField2").click(function() {
-        //var newInput = $("<input required type='text' value=''></input></br>")
-          //  .attr("id", "newInput")
-            //.attr("name", "newInput")
-        //var newInput = $("<textarea></textarea></br>")
-        var newInput = $("<input required type='text' value=''></input></br>")
-        .attr("class", "form-control")
-        .attr("id", fieldNum)
-        .attr("name", "flist-" + fieldNum)
-        $("#fflist").append(newInput);
-        fieldNum++;
-    });
-'''

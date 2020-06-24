@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, FieldList
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
-from models import *  # pour mongo et Database
+from models import *  # for mongoDB & Neo4j DB
 from wtforms.widgets import TextArea
 
 
@@ -22,7 +22,6 @@ class RegistrationForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
-    #Pas de graphs_id : l'ajouter dans users
 
     submit = SubmitField('Register')
 
@@ -96,7 +95,6 @@ class EditRelForm(FlaskForm):
 
 
 class EditFieldForm(FlaskForm):
-    #level = SelectField('Field level', choices=[(1,1), (2,2), (3,3)])
     root = SelectField('Root', choices=[("", "-- select an option --")], validators=[DataRequired()])
     fields = SelectField('Fields', choices=[("", "-- select an option --")], validators=[DataRequired()])
     new_field = StringField('New field')
@@ -105,7 +103,7 @@ class EditFieldForm(FlaskForm):
 
     def validate_root(self, root):
         print(root.data)
-        #si = ---select option -- : choose an option please
+        #if = ---select option -- : choose an option please
 
     def validate_fields(self, fields):
         print('ok')

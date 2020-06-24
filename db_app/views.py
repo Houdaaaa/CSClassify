@@ -29,7 +29,7 @@ def index(bw):
 @app.route('/all_classifications', defaults={'user': ''})
 @app.route('/<user>/all_classifications')
 def all_classifications(user):
-    classifications_names = MongoDB.find_all_classifications_names()  #uuid + name?
+    classifications_names = MongoDB.find_all_classifications_names()
     print(classifications_names)
 
     return render_template('classifications_titles.html', classifications_names=classifications_names, title='all classifications')
@@ -38,7 +38,7 @@ def all_classifications(user):
 @app.route('/<user>/my_classifications')  # classification's user only (member'space)
 @login_required
 def my_classifications(user):
-    user_id = current_user.get_id_2()    # graphs_id = current_user.get_graphs_id()
+    user_id = current_user.get_id_2()
     classifications_names = MongoDB.find_classifications_names(user_id)
     is_user_connected = True
 
@@ -48,11 +48,10 @@ def my_classifications(user):
 
 @app.route('/classification/<name>/', defaults={'bw': 'Cloud computing'})
 @app.route('/classification/<name>/<bw>')
-def display_classification(name, bw):  # id au lieu de name?
+def display_classification(name, bw):
     infos = MongoDB.find_classification_info(name)
     uuid_classification = str(infos['_id'])
     classification = Database.find_classification(uuid_classification)
-    #verifier if classification == [] (veut dire pas de uuid synchro entre mongoDB et NEo4J, ou classif vide)
 
     buzzwords = Database.find_buzz_words()[0]['names']
 
@@ -61,10 +60,8 @@ def display_classification(name, bw):  # id au lieu de name?
     else:
         buzzword_fields = None
 
-    #pas obligé d'être logué : si forker --> redigige vers la page suivante et si page suivante login_required
-    # --> login d'abord
     is_user_classification = False
-    if current_user.is_authenticated:  #page utilisé pour all user et quand je me co (via my_classif)
+    if current_user.is_authenticated:
         user_id = infos['user_id']
         if user_id == current_user.get_id_2():
             is_user_classification = True
@@ -101,7 +98,7 @@ def delete_classification(uuid_classification):
     if uuid_classification is not None:
         MongoDB.delete_classification(uuid_classification)
     return redirect(url_for('my_classifications', user=current_user.get_username()))
-    #return render_template('add_classification.html')
+
 
 @app.route('/add/classification/', defaults={'uuid_ancestor': None}, methods=['GET', 'POST'])
 @app.route('/fork/<uuid_ancestor>/', methods=['GET', 'POST'])
@@ -109,12 +106,12 @@ def delete_classification(uuid_classification):
 def fork(uuid_ancestor):
     form = AddClassificationForm()
 
-    if form.validate_on_submit():       # lien avec add_classification !
+    if form.validate_on_submit():
         classification = {
             'name': form.name.data,
             'is_forked': True,
             'details': form.presentation.data,
-            'user_id': current_user.get_id_2(),  # regler pb solution
+            'user_id': current_user.get_id_2(),
             'logs': []
         }
 
@@ -135,9 +132,8 @@ def add_subgraph(uuid_classification, new_root):
     form = AddSubGraphForm()
 
     if form.add_root.data:
-        # verify que juste stringfield ok !
         new_root = form.name_root.data
-        Database.add_root_field(new_root, uuid_classification)  # la vraie request car ne part de rien
+        Database.add_root_field(new_root, uuid_classification)
         return redirect(url_for('add_subgraph', uuid_classification=uuid_classification, new_root=new_root))
 
     if form.add_field.data:
@@ -169,7 +165,7 @@ def add_translation(uuid_classification, language, root_selected):
     Database.cloning_check(uuid_classification)
 
     form = AddTranslationForm()
-    classification_name = MongoDB.find_classification_name(uuid_classification) #Verifier que classification existe
+    classification_name = MongoDB.find_classification_name(uuid_classification)
 
     root_fields = Database.find_root_fields(uuid_classification)
     form.root_field.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
@@ -185,7 +181,7 @@ def add_translation(uuid_classification, language, root_selected):
     if form.valid3.data:
         for key, val in request.form.items():
             if key.startswith("f-"):
-                name_field = (key.partition('-')[2]).strip()     #  Change name into uuid or not ? yes
+                name_field = (key.partition('-')[2]).strip()
                 Database.add_translation(name_field, val, language, uuid_classification)  # translation of levels 2 & 3
         root_selected_name = Database.find_name(root_selected)
         Database.add_translation(root_selected_name, form.root_translation.data, language, uuid_classification) # translation of the root (level 1)
@@ -196,7 +192,7 @@ def add_translation(uuid_classification, language, root_selected):
 
     if root_selected != None:  # form.valid3 redirect here
         uuid_root_selected = root_selected
-        field_l2 = Database.find_subfields_2(uuid_root_selected, uuid_classification)  # return dico
+        field_l2 = Database.find_subfields_2(uuid_root_selected, uuid_classification)  # return dict
         root_selected_name = Database.find_name(uuid_root_selected)
         return render_template('add_translation.html', form=form, classification_name=classification_name,
                                language=language, field_l2=field_l2, root_selected_name=root_selected_name)
@@ -217,9 +213,9 @@ def add_field(classification_uuid):
     level2_fields = Database.find_same_level_fields(2, classification_uuid)
 
     form.root_field_attached.choices += [(root_field['uuid'], root_field['name']) for root_field in root_fields]
-    form.level2_field.choices += [(field['uuid'], field['name']) for field in level2_fields] # a afficher + executer que qd nécessaire
+    form.level2_field.choices += [(field['uuid'], field['name']) for field in level2_fields]
 
-    if form.submit.data:  #for verification
+    if form.submit.data:
         if form.level.data == '2':
             form.root_field_attached.validators = [DataRequired()]
         if form.level.data == '3':
@@ -275,7 +271,7 @@ def add_relation(classification_uuid):
                                                {"$push": {'logs': {'timestamp': datetime.utcnow(), 'request': req}}},
                                                upsert=False)
             # upsert parameter will insert instead of updating if the post is not found in the database.
-            return redirect(url_for('my_classifications', user=current_user.get_username()))  # bonne page?
+            return redirect(url_for('my_classifications', user=current_user.get_username()))
 
     return render_template('add_relation.html', form=form)
 
@@ -296,7 +292,7 @@ def edit_relation(classification_uuid):
     form.field2.choices += [(field['uuid'], field['name']) for field in all_fields]
 
     if form.delete.data:
-        if form.validate_on_submit():  # validation in form.py est suffisante ?
+        if form.validate_on_submit():
             uuid_field1 = form.field1.data
             uuid_field2 = form.field2.data
             rel = form.actual_rel.data
@@ -345,7 +341,7 @@ def edit_field(classification_uuid):
         mongo.db.Classification.update_one({'_id': ObjectId(classification_uuid)},
                                            {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
                                            upsert=False)
-        return redirect(url_for('all_classifications'))  # redirect to la même page? pour autre modification
+        return redirect(url_for('all_classifications'))
 
     if form.edit.data:
         form.new_field.validators = [DataRequired()]
@@ -359,7 +355,7 @@ def edit_field(classification_uuid):
                                                {"$push": {'logs': {'timestamp': timestamp, 'request': req}}},
                                                upsert=False)
             # upsert parameter will insert instead of updating if the post is not found in the database.
-            return redirect(url_for('all_classifications'))  # bonne page?
+            return redirect(url_for('all_classifications'))
 
     return render_template('edit_classification.html', form=form)
 
@@ -389,14 +385,14 @@ def login():
         return redirect(url_for('index'))
 
     form = LoginForm()
-    if form.validate_on_submit():  # Si GET return False
+    if form.validate_on_submit():  # if GET return False
         user = mongo.db.Users.find_one_or_404({"username": form.username.data})
         print(user['_id'])
         if user and User.check_password(user['password'], form.password.data):
             user_obj = User(username=user['username'])
             user_obj.set_var(lastname=user['lastname'], firstname=user['firstname'], email=user['email'],
                              job=user['job'], website_url=user['website_url'], graphs_id=user['graphs_id'], id=user['_id'])
-            # redondance avec load_user?? juste username et c ok normalement
+
             login_user(user_obj, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if not next_page or url_parse(next_page).netloc != '':
